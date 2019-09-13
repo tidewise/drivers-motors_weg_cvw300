@@ -1,6 +1,7 @@
 rock_library(motors_weg_cvw300
     SOURCES Driver.cpp
-    HEADERS Driver.hpp InverterStatus.hpp InverterTemperatures.hpp
+    HEADERS Driver.hpp InverterStatus.hpp InverterTemperatures.hpp Configuration.hpp
+            CurrentState.hpp
     DEPS_PKGCONFIG base-types modbus)
 
 rock_executable(motors_weg_cvw300_bin Main.cpp
