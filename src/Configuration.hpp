@@ -1,6 +1,8 @@
 #ifndef MOTORS_WEG_CVW300_CONFIGURATION_HPP
 #define MOTORS_WEG_CVW300_CONFIGURATION_HPP
 
+#include <base/Time.hpp>
+
 namespace motors_weg_cvw300 {
     namespace configuration {
         enum ControlType {
@@ -69,6 +71,32 @@ namespace motors_weg_cvw300 {
             SERIAL_MODE_REMOTE = 16,
             /** Reset existing faults */
             SERIAL_RESET_FAULT = 128
+        };
+
+        enum RampType {
+            RAMP_LINEAR,
+            RAMP_S_CURVE
+        };
+
+        struct Ramps {
+            /** Time to accelerate from zero to nominal speed */
+            base::Time acceleration_time = base::Time::fromSeconds(20);
+            /** Time to decelerate from nominal speed to zero */
+            base::Time deceleration_time = base::Time::fromSeconds(20);
+            /** Ramp type */
+            RampType type = RAMP_LINEAR;
+        };
+
+        struct VectorialControlSettings {
+            float speed_P = 7.4;
+            float speed_I = 0.023;
+            float speed_D = 0;
+            float current_P = 0.50;
+            float current_I = 0.010;
+            float flux_P = 2;
+            float flux_I = 0.020;
+            float flux_nominal = 1;
+            float flux_maximal = 1.2;
         };
     }
 }

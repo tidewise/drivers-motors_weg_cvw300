@@ -29,19 +29,39 @@ namespace motors_weg_cvw300 {
             R_INVERTER_OUTPUT_VOLTAGE = 7,
             R_MOTOR_TORQUE = 9,
             R_TEMPERATURE_MOSFET = 30,
-            R_ENCODER_VELOCITY = 38,
+            R_ENCODER_SPEED = 38,
             R_ENCODER_PULSE_COUNTER = 39,
+
+            R_RAMP_ACCELERATION_TIME = 100,
+            R_RAMP_DECELERATION_TIME = 101,
+            R_RAMP_TYPE = 104,
             R_MAX_SPEED_REFERENCE = 134,
             R_MAX_SPEED_ABSOLUTE = 134,
-            R_CONTROL_TYPE = 202,
+
+            R_GAIN_SPEED_P = 161,
+            R_GAIN_SPEED_I = 162,
+            R_GAIN_SPEED_D = 166,
+            R_GAIN_CURRENT_P = 167,
+            R_GAIN_CURRENT_I = 168,
             R_MAX_FORWARD_TORQUE = 169,
             R_MAX_REVERSE_TORQUE = 170,
-            R_SERIAL_ERROR_ACTION = 313,
-            R_SERIAL_WATCHDOG = 314,
+            R_GAIN_FLUX_P = 175,
+            R_GAIN_FLUX_I = 176,
+            R_FLUX_NOMINAL = 178,
+            R_FLUX_MAXIMAL = 179,
+
+            R_CONTROL_TYPE = 202,
             R_REM_REFERENCE_SELECTION = 222,
             R_REM_DIRECTION_SELECTION = 226,
             R_REM_RUN_STOP_SELECTION = 227,
             R_REM_JOG_SELECTION = 228,
+
+            R_SERIAL_ERROR_ACTION = 313,
+            R_SERIAL_WATCHDOG = 314,
+
+            R_MOTOR_NOMINAL_CURRENT = 401,
+            R_MOTOR_NOMINAL_SPEED = 402,
+            R_MOTOR_NOMINAL_POWER = 404,
 
             R_SERIAL_STATUS_WORD = 682,
             R_SERIAL_REFERENCE_SPEED = 683
@@ -83,6 +103,14 @@ namespace motors_weg_cvw300 {
 
         /** Send a speed command */
         void writeSpeedCommand(float command);
+
+        /** Change the ramp configuration */
+        void writeRampConfiguration(configuration::Ramps const& ramps);
+
+        /** Change the configuration of the vector control mode */
+        void writeVectorialControlSettings(
+            configuration::VectorialControlSettings const& ramps
+        );
 
         CurrentState readCurrentState();
 
