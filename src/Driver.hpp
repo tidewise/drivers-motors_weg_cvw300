@@ -14,10 +14,9 @@ namespace motors_weg_cvw300 {
      */
     class Driver : public modbus::Master {
         int m_address;
-        float m_motor_synchronous_velocity = base::unknown<float>();
+        float m_rated_speed = base::unknown<float>();
         float m_rated_torque = base::unknown<float>();
         float m_rated_current = base::unknown<float>();
-        float m_encoder_ticks_to_rad = base::unknown<float>();
 
         base::JointLimitRange m_limits;
 
@@ -59,6 +58,9 @@ namespace motors_weg_cvw300 {
     public:
         Driver(int address);
 
+        /** Read needed motor parameters from the controller */
+        void readMotorParameters();
+
         /** Enable the motor control, and give control to the serial interface */
         void enable();
 
@@ -67,25 +69,6 @@ namespace motors_weg_cvw300 {
          * interface
          */
         void disable();
-
-        /** Set the motor's synchronous velocity
-         *
-         * It is necessary for motor speed control
-         */
-        void setMotorSynchronousVelocity(float velocity);
-
-        /** Set the number of encoder ticks per turn
-         *
-         * It is necessary for readPosition()
-         */
-        void setEncoderTicksPerTurn(int ticks_per_turn);
-
-        /** Set the rated motor torque and current
-         *
-         * It is necessary for proper conversion from internal
-         * inverter values to torque values
-         */
-        void setMotorRatings(float torque, float current);
 
         /** Set the watchdog and the action to perform when it triggers */
         void writeSerialWatchdog(base::Time const& time,

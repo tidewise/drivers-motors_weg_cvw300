@@ -8,6 +8,26 @@ Driver::Driver(int address)
     : m_address(address) {
 }
 
+void Driver::readMotorParameters() {
+    m_rated_current = readSingleRegister<float>(R_MOTOR_NOMINAL_CURRENT);
+    m_rated_speed =
+        readSingleRegister<float>(R_MOTOR_NOMINAL_SPEED) * 2 * M_PI / 60;
+    int rated_power_i = readSingleRegister<uint16_t>(R_MOTOR_NOMINAL_POWER);
+    float rated_power = 0;
+    if (rated_power_i == 0)
+        rated_power = 3;
+    else if (rated_power_i == 1)
+        rated_power = 6;
+    else if (rated_power_i == 2)
+        rated_power = 12;
+    else {
+        throw std::invalid_argument("readMotorParameters(): unexpected rated "
+                                    "power value in reply");
+    }
+
+    m_rated_torque = rated_power / m_rated_speed;
+}
+
 void Driver::enable() {
     writeSingleRegister<int16_t>(R_REM_REFERENCE_SELECTION,
                                  configuration::REFERENCE_SERIAL);
@@ -33,19 +53,6 @@ void Driver::disable() {
         R_SERIAL_STATUS_WORD,
         configuration::SERIAL_DIRECTION_POSITIVE
     );
-}
-
-void Driver::setMotorSynchronousVelocity(float velocity) {
-    m_motor_synchronous_velocity = velocity;
-}
-
-void Driver::setEncoderTicksPerTurn(int ticks_per_turn) {
-    m_encoder_ticks_to_rad = 1.0 / ticks_per_turn * (2 * M_PI);
-}
-
-void Driver::setMotorRatings(float torque, float current) {
-    m_rated_torque = torque;
-    m_rated_current = current;
 }
 
 void Driver::writeSerialWatchdog(base::Time const& time,
@@ -113,7 +120,7 @@ void Driver::writeJointLimits(base::JointLimitRange const& limits) {
 }
 
 void Driver::writeSpeedCommand(float command) {
-    int16_t scaled_command = 8192 * command / m_motor_synchronous_velocity;
+    int16_t scaled_command = 8192 * command / m_rated_speed;
     writeSingleRegister(R_SERIAL_REFERENCE_SPEED, scaled_command);
 }
 
