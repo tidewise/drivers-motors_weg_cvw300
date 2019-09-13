@@ -4,7 +4,7 @@
 namespace motors_weg_cvw300 {
     namespace configuration {
         enum ControlType {
-            CONTROL_VECTORIAL = 0,
+            CONTROL_SCALAR = 0,
             CONTROL_SENSORLESS = 1,
             CONTROL_ENCODER = 2
         };
