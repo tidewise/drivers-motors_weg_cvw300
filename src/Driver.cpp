@@ -64,6 +64,10 @@ void Driver::writeSerialWatchdog(base::Time const& time,
 template<typename T>
 uint16_t encodeRegister(T value);
 
+template<> uint16_t encodeRegister(uint16_t value) {
+    return value;
+}
+
 template<> uint16_t encodeRegister(int16_t value) {
     return reinterpret_cast<uint16_t&>(value);
 }
@@ -74,6 +78,10 @@ template<> uint16_t encodeRegister(float value) {
 
 template<typename T>
 T decodeRegister(uint16_t value);
+
+template<> uint16_t decodeRegister(uint16_t value) {
+    return value;
+}
 
 template<> int16_t decodeRegister(uint16_t value) {
     return reinterpret_cast<int16_t&>(value);
