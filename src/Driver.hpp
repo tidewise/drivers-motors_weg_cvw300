@@ -81,6 +81,21 @@ namespace motors_weg_cvw300 {
         /** Read needed motor parameters from the controller */
         void readMotorParameters();
 
+        float getRatedSpeed() const;
+
+        void setRatedSpeed(float speed);
+
+        float getRatedTorque() const;
+
+        void setRatedTorque(float torque);
+
+        float getRatedCurrent() const;
+
+        void setRatedCurrent(float current);
+
+        /** Prepare the unit to receive control from the driver w/o enabling power */
+        void prepare();
+
         /** Enable the motor control, and give control to the serial interface */
         void enable();
 
