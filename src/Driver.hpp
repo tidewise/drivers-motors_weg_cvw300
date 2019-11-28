@@ -7,6 +7,7 @@
 #include <motors_weg_cvw300/Configuration.hpp>
 #include <motors_weg_cvw300/InverterTemperatures.hpp>
 #include <motors_weg_cvw300/CurrentState.hpp>
+#include <motors_weg_cvw300/MotorRatings.hpp>
 
 namespace motors_weg_cvw300 {
     /**
@@ -14,9 +15,8 @@ namespace motors_weg_cvw300 {
      */
     class Driver : public modbus::Master {
         int m_address;
-        float m_rated_speed = base::unknown<float>();
-        float m_rated_torque = base::unknown<float>();
-        float m_rated_current = base::unknown<float>();
+
+        MotorRatings m_ratings;
 
         base::JointLimitRange m_limits;
 
@@ -79,19 +79,11 @@ namespace motors_weg_cvw300 {
         Driver(int address);
 
         /** Read needed motor parameters from the controller */
-        void readMotorParameters();
+        MotorRatings readMotorRatings();
 
-        float getRatedSpeed() const;
+        MotorRatings getMotorRatings() const;
 
-        void setRatedSpeed(float speed);
-
-        float getRatedTorque() const;
-
-        void setRatedTorque(float torque);
-
-        float getRatedCurrent() const;
-
-        void setRatedCurrent(float current);
+        void setMotorRatings(MotorRatings const& ratings);
 
         /** Prepare the unit to receive control from the driver w/o enabling power */
         void prepare();

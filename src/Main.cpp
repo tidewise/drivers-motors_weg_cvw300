@@ -45,6 +45,12 @@ int main(int argc, char** argv)
     if (cmd == "status") {
         Driver driver(id);
         driver.openURI(uri);
+        auto ratings = driver.readMotorRatings();
+        cout << "Ratings:\n"
+             << "Power: " << ratings.power << " W\n"
+             << "Current: " << ratings.current << " A\n"
+             << "Speed: " << ratings.speed / 2 / M_PI * 180 << " deg/s\n"
+             << "Torque: " << ratings.torque << " N.m\n";
         auto state = driver.readCurrentState();
         cout << "Battery Voltage: " << state.battery_voltage << " V\n"
              << "Inverter Output Voltage: "  << state.inverter_output_voltage << " V\n"
