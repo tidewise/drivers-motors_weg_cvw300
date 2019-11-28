@@ -6,6 +6,8 @@ using namespace motors_weg_cvw300;
 
 Driver::Driver(int address)
     : m_address(address) {
+    // default of 7ms is too low for the weg controller at 57600
+    setInterframeDelay(base::Time::fromMilliseconds(14));
 }
 
 void Driver::readMotorParameters() {
