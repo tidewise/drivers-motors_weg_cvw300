@@ -150,11 +150,6 @@ namespace motors_weg_cvw300 {
         /** Change the ramp configuration */
         void writeRampConfiguration(configuration::Ramps const& ramps);
 
-        /** Change the configuration of the vector control mode */
-        void writeVectorialControlSettings(
-            configuration::VectorialControlSettings const& ramps
-        );
-
         CurrentState readCurrentState();
 
         InverterTemperatures readTemperatures();

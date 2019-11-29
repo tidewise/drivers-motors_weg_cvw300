@@ -206,20 +206,6 @@ void Driver::writeRampConfiguration(configuration::Ramps const& ramps) {
     writeSingleRegister<uint16_t>(R_RAMP_TYPE, ramps.type);
 }
 
-void Driver::writeVectorialControlSettings(
-    configuration::VectorialControlSettings const& settings
-) {
-    writeSingleRegister<float>(R_GAIN_SPEED_P, settings.speed_P * 10);
-    writeSingleRegister<float>(R_GAIN_SPEED_I, settings.speed_I * 1000);
-    writeSingleRegister<float>(R_GAIN_SPEED_D, settings.speed_D * 100);
-    writeSingleRegister<float>(R_GAIN_CURRENT_P, settings.current_P * 100);
-    writeSingleRegister<float>(R_GAIN_CURRENT_I, settings.current_I * 1000);
-    writeSingleRegister<float>(R_GAIN_FLUX_P, settings.flux_P * 10);
-    writeSingleRegister<float>(R_GAIN_FLUX_I, settings.flux_I * 1000);
-    writeSingleRegister<float>(R_FLUX_NOMINAL, settings.flux_nominal * 100);
-    writeSingleRegister<float>(R_FLUX_MAXIMAL, settings.flux_maximal * 100);
-}
-
 CurrentState Driver::readCurrentState() {
     uint16_t values[R_ENCODER_SPEED + 2];
 

@@ -211,31 +211,6 @@ TEST_F(DriverTest, it_writes_the_ramp_configuration) {
     driver.writeRampConfiguration(ramps);
 }
 
-TEST_F(DriverTest, it_writes_the_vectorial_controller_settings) {
-    IODRIVERS_BASE_MOCK();
-    configuration::VectorialControlSettings settings;
-    settings.speed_P = 1.1;
-    settings.speed_I = 2.2;
-    settings.speed_D = 3.3;
-    settings.current_P = 4.4;
-    settings.current_I = 5.5;
-    settings.flux_P = 6.6;
-    settings.flux_I = 7.7;
-    settings.flux_nominal = 0.8;
-    settings.flux_maximal = 1.2;
-
-    EXPECT_MODBUS_WRITE(5, 161, 11);
-    EXPECT_MODBUS_WRITE(5, 162, 2200);
-    EXPECT_MODBUS_WRITE(5, 166, 330);
-    EXPECT_MODBUS_WRITE(5, 167, 440);
-    EXPECT_MODBUS_WRITE(5, 168, 5500);
-    EXPECT_MODBUS_WRITE(5, 175, 66);
-    EXPECT_MODBUS_WRITE(5, 176, 7700);
-    EXPECT_MODBUS_WRITE(5, 178, 80);
-    EXPECT_MODBUS_WRITE(5, 179, 120);
-    driver.writeVectorialControlSettings(settings);
-}
-
 TEST_F(DriverTest, it_reads_the_current_state) {
     IODRIVERS_BASE_MOCK();
 
