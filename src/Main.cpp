@@ -1,6 +1,7 @@
 #include <iostream>
 #include <motors_weg_cvw300/Driver.hpp>
 #include <base/Angle.hpp>
+#include <iomanip>
 
 using namespace std;
 using namespace motors_weg_cvw300;
@@ -50,8 +51,10 @@ int main(int argc, char** argv)
         cout << "Ratings:\n"
              << "Power: " << ratings.power << " W\n"
              << "Current: " << ratings.current << " A\n"
-             << "Speed: " << ratings.speed / 2 / M_PI * 180 << " deg/s\n"
-             << "Torque: " << ratings.torque << " N.m\n";
+             << "Speed: " << ratings.speed / 2 / M_PI * 180 << " deg/s "
+                << "(" << ratings.speed / 2 / M_PI * 60 << " rpm)\n"
+             << "Torque: " << ratings.torque << " N.m\n"
+             << "Encoder Count: " << ratings.encoder_count << " ticks p. turn\n";
         auto state = driver.readCurrentState();
         cout << "Battery Voltage: " << state.battery_voltage << " V\n"
              << "Inverter Output Voltage: "  << state.inverter_output_voltage << " V\n"
@@ -59,7 +62,7 @@ int main(int argc, char** argv)
                 << state.inverter_output_frequency << " Hz\n"
              << "Status: "  << statusToString(state.inverter_status) << "\n"
              << "Position: "
-                << base::Angle::fromRad(state.motor.position).getDeg() << "\n"
+                << base::Angle::fromRad(state.motor.position).getDeg() << " deg\n"
              << "Speed: " << state.motor.speed / 2 / M_PI << "\n"
              << "Torque: " << state.motor.effort << "\n"
              << "Current: " << state.motor.raw << "\n";
@@ -68,19 +71,20 @@ int main(int argc, char** argv)
         Driver driver(id);
         driver.openURI(uri);
         driver.readMotorRatings();
-        std::cout << "Bat (V); Output (V); Output (Hz); Speed (rpm); "
-                     "Torque (N.m); Current (A)\n";
+        std::cout << "Status; Bat (V); Output (V); Output (Hz); "
+                     "Position (deg); Speed (rpm); orque (N.m); Current (A)\n";
 
         while (true) {
             auto state = driver.readCurrentState();
-            cout << state.battery_voltage << " "
-                << state.inverter_output_voltage << " "
-                << state.inverter_output_frequency << " "
-                << statusToString(state.inverter_status) << " "
-                << base::Angle::fromRad(state.motor.position).getDeg() << " "
-                << state.motor.speed / 2 / M_PI << " "
-                << state.motor.effort << " "
-                << state.motor.raw << "\n";
+            cout << setw(5) << setprecision(1) << fixed;
+            cout << setw(10) << statusToString(state.inverter_status) << " "
+                 << setw(5) << state.battery_voltage << " "
+                 << setw(5) << state.inverter_output_voltage << " "
+                 << setw(5) << state.inverter_output_frequency << " "
+                 << setw(6) << base::Angle::fromRad(state.motor.position).getDeg() << " "
+                 << setw(7) << state.motor.speed / 2 / M_PI * 60 << " "
+                 << setw(6) << state.motor.effort << " "
+                 << setw(6) << state.motor.raw << "\n";
         }
     }
     else {
