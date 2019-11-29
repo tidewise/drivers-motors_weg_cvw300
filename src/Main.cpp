@@ -92,6 +92,19 @@ int main(int argc, char** argv)
                  << setw(6) << state.motor.raw << "\n";
         }
     }
+    else if (cmd == "cfg-dump") {
+        modbus::Master modbus;
+        modbus.openURI(uri);
+
+        for (int i = 0; i < 1100; ++i) {
+            try {
+                uint16_t value = modbus.readSingleRegister(id, false, i);
+                std::cout << i << " " << value << "\n";
+            }
+            catch (modbus::RequestException const &) {
+            }
+        }
+    }
     else {
         cerr << "unknown command '" << cmd << "'";
         usage(cerr);
