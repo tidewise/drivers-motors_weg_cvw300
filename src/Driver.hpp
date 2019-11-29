@@ -80,11 +80,29 @@ namespace motors_weg_cvw300 {
     public:
         Driver(int address);
 
-        /** Read needed motor parameters from the controller */
+        /** Read needed motor parameters from the controller
+         *
+         * See @c getMotorRatings for explanations
+         *
+         * @see getMotorRatings setMotorRatings
+         */
         MotorRatings readMotorRatings();
 
+        /** Get the motor ratings currently used by this class for conversions
+         *
+         * Motor ratings can either be set explicitely (@c setMotorRatings) or
+         * read from the controller configuration (@c readMotorRatings). This
+         * method does not do any update, it only returns the values currently
+         * in use
+         */
         MotorRatings getMotorRatings() const;
 
+        /** Explicitely set the motor ratings
+         *
+         * See @c getMotorRatings for explanations
+         *
+         * @see getMotorRatings readMotorRatings
+         */
         void setMotorRatings(MotorRatings const& ratings);
 
         /** Set whether the position and speed feedback should directly use the encoder
