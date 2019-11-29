@@ -5,6 +5,9 @@
 
 namespace motors_weg_cvw300 {
     struct MotorRatings {
+        /** Number of encoder ticks per turn */
+        uint16_t encoder_count = 0;
+
         /** Motor nominal current */
         float current = base::unknown<float>();
 

@@ -17,6 +17,7 @@ namespace motors_weg_cvw300 {
         int m_address;
 
         MotorRatings m_ratings;
+        bool m_use_encoder_feedback = false;
 
         base::JointLimitRange m_limits;
 
@@ -62,6 +63,7 @@ namespace motors_weg_cvw300 {
             R_MOTOR_NOMINAL_CURRENT = 401,
             R_MOTOR_NOMINAL_SPEED = 402,
             R_MOTOR_NOMINAL_POWER = 404,
+            R_ENCODER_COUNT = 405,
 
             R_SERIAL_STATUS_WORD = 682,
             R_SERIAL_REFERENCE_SPEED = 683
@@ -84,6 +86,22 @@ namespace motors_weg_cvw300 {
         MotorRatings getMotorRatings() const;
 
         void setMotorRatings(MotorRatings const& ratings);
+
+        /** Set whether the position and speed feedback should directly use the encoder
+         *
+         * Unlike the motor speed reported by the controller, the encoder feedback is
+         * always available - even when control is off - and also gives position
+         *
+         * Generally speaking, it's best to use the encoder if there is one and
+         * use the other method when no encoder is present (sensorless setup)
+         */
+        void setUseEncoderFeedback(bool use);
+
+        /* Get whether the feedback should use encoder readings or motor state registers
+         *
+         * @see getUseEncoderFeedback
+         */
+        bool getUseEncoderFeedback() const;
 
         /** Prepare the unit to receive control from the driver w/o enabling power */
         void prepare();

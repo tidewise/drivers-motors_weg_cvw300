@@ -1,4 +1,5 @@
 #include <motors_weg_cvw300/Driver.hpp>
+#include <base/Angle.hpp>
 
 using namespace std;
 using namespace base;
@@ -13,6 +14,7 @@ Driver::Driver(int address)
 MotorRatings Driver::readMotorRatings() {
     MotorRatings ratings;
     ratings.current = readSingleRegister<float>(R_MOTOR_NOMINAL_CURRENT);
+    ratings.encoder_count = readSingleRegister<uint16_t>(R_ENCODER_COUNT);
     ratings.speed =
         readSingleRegister<float>(R_MOTOR_NOMINAL_SPEED) * 2 * M_PI / 60;
     int rated_power_i = readSingleRegister<uint16_t>(R_MOTOR_NOMINAL_POWER);
@@ -41,6 +43,14 @@ void Driver::setMotorRatings(MotorRatings const& ratings) {
 
 MotorRatings Driver::getMotorRatings() const {
     return m_ratings;
+}
+
+void Driver::setUseEncoderFeedback(bool use) {
+    m_use_encoder_feedback = use;
+}
+
+bool Driver::getUseEncoderFeedback() const {
+    return m_use_encoder_feedback;
 }
 
 void Driver::prepare() {
@@ -211,26 +221,39 @@ void Driver::writeVectorialControlSettings(
 }
 
 CurrentState Driver::readCurrentState() {
-    uint16_t values[32];
-    readRegisters(values, m_address,
-                  false, R_MOTOR_SPEED, R_MOTOR_TORQUE - R_MOTOR_SPEED + 1);
+    uint16_t values[R_ENCODER_SPEED + 2];
+
+    readRegisters(values + R_MOTOR_SPEED, m_address, false, R_MOTOR_SPEED, 8);
+    if (m_use_encoder_feedback) {
+        readRegisters(values + R_ENCODER_SPEED, m_address, false, R_ENCODER_SPEED, 2);
+    }
 
     CurrentState state;
-    state.motor.speed = decodeRegister<float>(
-        values[R_MOTOR_SPEED - R_MOTOR_SPEED]) * 2 * M_PI / 60;
+    if (m_use_encoder_feedback) {
+        state.motor.speed = decodeRegister<float>(
+            values[R_ENCODER_SPEED]) * 2 * M_PI / 60;
+        float position = static_cast<float>(
+            values[R_ENCODER_PULSE_COUNTER] % m_ratings.encoder_count
+        ) / m_ratings.encoder_count * 2 * M_PI;
+        state.motor.position = base::Angle::normalizeRad(position);
+    }
+    else {
+        state.motor.speed = decodeRegister<float>(
+            values[R_MOTOR_SPEED]) * 2 * M_PI / 60;
+    }
     state.motor.raw = decodeRegister<float>(
-        values[R_INVERTER_OUTPUT_CURRENT - R_MOTOR_SPEED]) / 10;
+        values[R_INVERTER_OUTPUT_CURRENT]) / 10;
     state.battery_voltage = decodeRegister<float>(
-        values[R_BATTERY_VOLTAGE - R_MOTOR_SPEED]) / 10;
+        values[R_BATTERY_VOLTAGE]) / 10;
     state.inverter_output_frequency = decodeRegister<float>(
-        values[R_INVERTER_OUTPUT_FREQUENCY - R_MOTOR_SPEED]) / 10;
+        values[R_INVERTER_OUTPUT_FREQUENCY]) / 10;
     state.inverter_status = static_cast<InverterStatus>(
-        values[R_INVERTER_STATUS - R_MOTOR_SPEED]
+        values[R_INVERTER_STATUS]
     );
     state.inverter_output_voltage = decodeRegister<float>(
-        values[R_INVERTER_OUTPUT_VOLTAGE - R_MOTOR_SPEED]) / 10;
+        values[R_INVERTER_OUTPUT_VOLTAGE]) / 10;
     state.motor.effort  = decodeRegister<float>(
-        values[R_MOTOR_TORQUE - R_MOTOR_SPEED]) / 1000 * m_ratings.torque;
+        values[R_MOTOR_TORQUE]) / 1000 * m_ratings.torque;
 
     if (state.motor.raw * state.motor.effort < 0) {
         state.motor.speed *= -1;

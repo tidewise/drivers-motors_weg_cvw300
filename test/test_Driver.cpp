@@ -22,12 +22,14 @@ struct DriverTest : public testing::Test,
 TEST_F(DriverTest, it_reads_motor_parameters) {
     IODRIVERS_BASE_MOCK();
 
+    EXPECT_MODBUS_READ(5, false, 405, { 1024 }); // 1024 ticks per turn
     EXPECT_MODBUS_READ(5, false, 401, { 10 }); // 10A nominal
     EXPECT_MODBUS_READ(5, false, 402, { 500 }); // 500rpm nominal
     EXPECT_MODBUS_READ(5, false, 404, { 1 }); // 6 kW
     auto ratings = driver.readMotorRatings();
 
     ASSERT_FLOAT_EQ(10, ratings.current);
+    ASSERT_FLOAT_EQ(1024, ratings.encoder_count);
     ASSERT_FLOAT_EQ(500.0 * 2.0 * M_PI / 60, ratings.speed);
     ASSERT_NEAR(114.59, ratings.torque, 1e-2);
     ASSERT_FLOAT_EQ(6000, ratings.power);
@@ -263,6 +265,88 @@ TEST_F(DriverTest, it_reads_the_current_state) {
     ASSERT_FLOAT_EQ(50.2, state.inverter_output_frequency);
     ASSERT_EQ(STATUS_AUTOTUNING, state.inverter_status);
 }
+
+TEST_F(DriverTest, it_optionally_uses_the_encoder_for_position_and_speed_feedback) {
+    IODRIVERS_BASE_MOCK();
+
+    MotorRatings ratings;
+    ratings.current = 100;
+    ratings.torque = 42;
+    ratings.encoder_count = 1024;
+    driver.setMotorRatings(ratings);
+    driver.setUseEncoderFeedback(true);
+
+    EXPECT_MODBUS_READ(5, false, 2,
+        { 15, // speed 0002
+          (uint16_t)-12, // current 0003
+          421, // battery voltage 0004
+          502, // frequency 0005
+          4, // inverter status 0006
+          128, // output voltage 0007
+          0, // 0008
+          243 // torque 0009
+        }
+    );
+
+    EXPECT_MODBUS_READ(5, false, 38,
+        { 25, // encoder speed 0038
+          256 // encoder position
+        }
+    );
+
+    CurrentState state = driver.readCurrentState();
+    ASSERT_FLOAT_EQ(M_PI / 2, state.motor.position);
+    ASSERT_FLOAT_EQ(-25 * 2 * M_PI / 60, state.motor.speed);
+    ASSERT_FLOAT_EQ(10.206, state.motor.effort);
+    ASSERT_FLOAT_EQ(-1.2, state.motor.raw);
+    ASSERT_FLOAT_EQ(42.1, state.battery_voltage);
+    ASSERT_FLOAT_EQ(12.8, state.inverter_output_voltage);
+    ASSERT_FLOAT_EQ(50.2, state.inverter_output_frequency);
+    ASSERT_EQ(STATUS_AUTOTUNING, state.inverter_status);
+}
+
+TEST_F(DriverTest, it_handles_an_encoder_feedback_that_has_not_wrapped_around) {
+    IODRIVERS_BASE_MOCK();
+
+    MotorRatings ratings;
+    ratings.current = 100;
+    ratings.torque = 42;
+    ratings.encoder_count = 1024;
+    driver.setMotorRatings(ratings);
+    driver.setUseEncoderFeedback(true);
+
+    EXPECT_MODBUS_READ(5, false, 2, { 0, 0, 0, 0, 0, 0, 0, 0 });
+    EXPECT_MODBUS_READ(5, false, 38,
+        { 25, // encoder speed 0038
+          1024 + 256 // encoder position
+        }
+    );
+
+    CurrentState state = driver.readCurrentState();
+    ASSERT_FLOAT_EQ(M_PI / 2, state.motor.position);
+}
+
+TEST_F(DriverTest, it_normalizes_the_position) {
+    IODRIVERS_BASE_MOCK();
+
+    MotorRatings ratings;
+    ratings.current = 100;
+    ratings.torque = 42;
+    ratings.encoder_count = 1024;
+    driver.setMotorRatings(ratings);
+    driver.setUseEncoderFeedback(true);
+
+    EXPECT_MODBUS_READ(5, false, 2, { 0, 0, 0, 0, 0, 0, 0, 0 });
+    EXPECT_MODBUS_READ(5, false, 38,
+        { 25, // encoder speed 0038
+          768 // encoder position
+        }
+    );
+
+    CurrentState state = driver.readCurrentState();
+    ASSERT_FLOAT_EQ(-M_PI / 2, state.motor.position);
+}
+
 
 TEST_F(DriverTest, it_determines_the_motor_direction_with_torque_positive_and_current_positive) {
     IODRIVERS_BASE_MOCK();

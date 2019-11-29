@@ -26,9 +26,8 @@ void usage(ostream& stream) {
            << "Factory defaults: 19200, ID=1\n"
            << "\n"
            << "Available Commands\n"
-           << "  status: query the controller status\n"
-           << "  read-holding REG LENGTH: read holding registers\n"
-           << "  read-input REG LENGTH: read input registers\n"
+           << "  status [--encoder]: query the controller status\n"
+           << "  poll [--encoder]: repeatedly display the motor state\n"
            << endl;
 }
 
@@ -43,10 +42,15 @@ int main(int argc, char** argv)
     string uri = argv[1];
     int id = std::atoi(argv[2]);
     string cmd = argv[3];
+    bool encoder = false;
+    if (argc > 4) {
+        encoder = (argv[4] == string("--encoder"));
+    }
 
     if (cmd == "status") {
         Driver driver(id);
         driver.openURI(uri);
+        driver.setUseEncoderFeedback(encoder);
         auto ratings = driver.readMotorRatings();
         cout << "Ratings:\n"
              << "Power: " << ratings.power << " W\n"
@@ -70,6 +74,7 @@ int main(int argc, char** argv)
     else if (cmd == "poll") {
         Driver driver(id);
         driver.openURI(uri);
+        driver.setUseEncoderFeedback(encoder);
         driver.readMotorRatings();
         std::cout << "Status; Bat (V); Output (V); Output (Hz); "
                      "Position (deg); Speed (rpm); orque (N.m); Current (A)\n";
