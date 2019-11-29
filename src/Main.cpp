@@ -1,5 +1,6 @@
 #include <iostream>
 #include <motors_weg_cvw300/Driver.hpp>
+#include <base/Angle.hpp>
 
 using namespace std;
 using namespace motors_weg_cvw300;
@@ -56,7 +57,31 @@ int main(int argc, char** argv)
              << "Inverter Output Voltage: "  << state.inverter_output_voltage << " V\n"
              << "Inverter Output Frequency: "
                 << state.inverter_output_frequency << " Hz\n"
-             << "Status: "  << statusToString(state.inverter_status) << "\n";
+             << "Status: "  << statusToString(state.inverter_status) << "\n"
+             << "Position: "
+                << base::Angle::fromRad(state.motor.position).getDeg() << "\n"
+             << "Speed: " << state.motor.speed / 2 / M_PI << "\n"
+             << "Torque: " << state.motor.effort << "\n"
+             << "Current: " << state.motor.raw << "\n";
+    }
+    else if (cmd == "poll") {
+        Driver driver(id);
+        driver.openURI(uri);
+        driver.readMotorRatings();
+        std::cout << "Bat (V); Output (V); Output (Hz); Speed (rpm); "
+                     "Torque (N.m); Current (A)\n";
+
+        while (true) {
+            auto state = driver.readCurrentState();
+            cout << state.battery_voltage << " "
+                << state.inverter_output_voltage << " "
+                << state.inverter_output_frequency << " "
+                << statusToString(state.inverter_status) << " "
+                << base::Angle::fromRad(state.motor.position).getDeg() << " "
+                << state.motor.speed / 2 / M_PI << " "
+                << state.motor.effort << " "
+                << state.motor.raw << "\n";
+        }
     }
     else {
         cerr << "unknown command '" << cmd << "'";
