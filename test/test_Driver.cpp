@@ -23,13 +23,13 @@ TEST_F(DriverTest, it_reads_motor_parameters) {
     IODRIVERS_BASE_MOCK();
 
     EXPECT_MODBUS_READ(5, false, 405, { 1024 }); // 1024 ticks per turn
-    EXPECT_MODBUS_READ(5, false, 401, { 10 }); // 10A nominal
+    EXPECT_MODBUS_READ(5, false, 401, { 10 }); // 1A nominal
     EXPECT_MODBUS_READ(5, false, 402, { 500 }); // 500rpm nominal
     EXPECT_MODBUS_READ(5, false, 404, { 1 }); // 6 kW
     auto ratings = driver.readMotorRatings();
 
-    ASSERT_FLOAT_EQ(10, ratings.current);
     ASSERT_FLOAT_EQ(1024, ratings.encoder_count);
+    ASSERT_FLOAT_EQ(1, ratings.current);
     ASSERT_FLOAT_EQ(500.0 * 2.0 * M_PI / 60, ratings.speed);
     ASSERT_NEAR(114.59, ratings.torque, 1e-2);
     ASSERT_FLOAT_EQ(6000, ratings.power);

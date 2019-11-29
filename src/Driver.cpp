@@ -13,8 +13,8 @@ Driver::Driver(int address)
 
 MotorRatings Driver::readMotorRatings() {
     MotorRatings ratings;
-    ratings.current = readSingleRegister<float>(R_MOTOR_NOMINAL_CURRENT);
     ratings.encoder_count = readSingleRegister<uint16_t>(R_ENCODER_COUNT);
+    ratings.current = readSingleRegister<float>(R_MOTOR_NOMINAL_CURRENT) / 10;
     ratings.speed =
         readSingleRegister<float>(R_MOTOR_NOMINAL_SPEED) * 2 * M_PI / 60;
     int rated_power_i = readSingleRegister<uint16_t>(R_MOTOR_NOMINAL_POWER);
