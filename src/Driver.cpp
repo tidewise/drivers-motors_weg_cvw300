@@ -1,5 +1,6 @@
 #include <motors_weg_cvw300/Driver.hpp>
 #include <base/Angle.hpp>
+#include <modbus/RTU.hpp>
 
 using namespace std;
 using namespace base;
@@ -91,6 +92,19 @@ void Driver::writeSerialWatchdog(base::Time const& time,
                                  configuration::CommunicationErrorAction action) {
     writeSingleRegister<uint16_t>(R_SERIAL_ERROR_ACTION, action);
     writeSingleRegister<float>(R_SERIAL_WATCHDOG, time.toSeconds() * 10);
+}
+
+void Driver::configSave() {
+    for (int i = 0; i < 3; ++i) {
+        // Writing this causes an invalid CRC, and then re-reading it fails as
+        // well. Write it three times blindly :(
+        try {
+            modbus::Master::writeSingleRegister(m_address, R_CONFIG_SAVE, 1);
+        }
+        catch (modbus::RTU::InvalidCRC const&) {
+        }
+        usleep(100000);
+    }
 }
 
 template<typename T>

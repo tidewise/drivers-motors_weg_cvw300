@@ -57,6 +57,7 @@ namespace motors_weg_cvw300 {
             R_REM_RUN_STOP_SELECTION = 227,
             R_REM_JOG_SELECTION = 228,
 
+            R_CONFIG_SAVE = 303,
             R_SERIAL_ERROR_ACTION = 313,
             R_SERIAL_WATCHDOG = 314,
 
@@ -79,6 +80,9 @@ namespace motors_weg_cvw300 {
 
     public:
         Driver(int address);
+
+        /** Save current configuration */
+        void configSave();
 
         /** Read needed motor parameters from the controller
          *
