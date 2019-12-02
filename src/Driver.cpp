@@ -13,7 +13,7 @@ Driver::Driver(int address)
 }
 
 MotorRatings Driver::readMotorRatings() {
-    MotorRatings ratings;
+    MotorRatings ratings = m_ratings;
     ratings.encoder_count = readSingleRegister<uint16_t>(R_ENCODER_COUNT);
     ratings.current = readSingleRegister<float>(R_MOTOR_NOMINAL_CURRENT) / 10;
     ratings.speed =
@@ -38,12 +38,16 @@ MotorRatings Driver::readMotorRatings() {
     return ratings;
 }
 
-void Driver::setMotorRatings(MotorRatings const& ratings) {
-    m_ratings = ratings;
+void Driver::setEncoderScale(uint16_t scale) {
+    m_ratings.encoder_scale = scale;
 }
 
 MotorRatings Driver::getMotorRatings() const {
     return m_ratings;
+}
+
+void Driver::setMotorRatings(MotorRatings const& ratings) {
+    m_ratings = ratings;
 }
 
 void Driver::setUseEncoderFeedback(bool use) {
@@ -232,10 +236,13 @@ CurrentState Driver::readCurrentState() {
     if (m_use_encoder_feedback) {
         state.motor.speed = decodeRegister<float>(
             values[R_ENCODER_SPEED]) * 2 * M_PI / 60;
-        float position = static_cast<float>(
-            values[R_ENCODER_PULSE_COUNTER] % m_ratings.encoder_count
-        ) / m_ratings.encoder_count * 2 * M_PI;
-        state.motor.position = base::Angle::normalizeRad(position);
+        if (m_ratings.encoder_scale) {
+            uint32_t ticks_per_turn = m_ratings.encoder_count * m_ratings.encoder_scale;
+            float position = static_cast<float>(
+                values[R_ENCODER_PULSE_COUNTER] % ticks_per_turn
+            ) / ticks_per_turn * 2 * M_PI;
+            state.motor.position = base::Angle::normalizeRad(position);
+        }
     }
     else {
         state.motor.speed = decodeRegister<float>(

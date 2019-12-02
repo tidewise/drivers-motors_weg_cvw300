@@ -84,6 +84,14 @@ namespace motors_weg_cvw300 {
         /** Save current configuration */
         void configSave();
 
+        /** Set the encoder scale parameter of the encoder ratings
+         *
+         * This must be set manually if one wants an accurate position
+         * reading in the joint state. The default of zero disables
+         * position reporting altogether
+         */
+        void setEncoderScale(uint16_t scale);
+
         /** Read needed motor parameters from the controller
          *
          * See @c getMotorRatings for explanations
