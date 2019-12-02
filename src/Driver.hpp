@@ -7,6 +7,7 @@
 #include <motors_weg_cvw300/Configuration.hpp>
 #include <motors_weg_cvw300/InverterTemperatures.hpp>
 #include <motors_weg_cvw300/CurrentState.hpp>
+#include <motors_weg_cvw300/MotorRatings.hpp>
 
 namespace motors_weg_cvw300 {
     /**
@@ -14,9 +15,9 @@ namespace motors_weg_cvw300 {
      */
     class Driver : public modbus::Master {
         int m_address;
-        float m_rated_speed = base::unknown<float>();
-        float m_rated_torque = base::unknown<float>();
-        float m_rated_current = base::unknown<float>();
+
+        MotorRatings m_ratings;
+        bool m_use_encoder_feedback = false;
 
         base::JointLimitRange m_limits;
 
@@ -62,6 +63,7 @@ namespace motors_weg_cvw300 {
             R_MOTOR_NOMINAL_CURRENT = 401,
             R_MOTOR_NOMINAL_SPEED = 402,
             R_MOTOR_NOMINAL_POWER = 404,
+            R_ENCODER_COUNT = 405,
 
             R_SERIAL_STATUS_WORD = 682,
             R_SERIAL_REFERENCE_SPEED = 683
@@ -78,20 +80,46 @@ namespace motors_weg_cvw300 {
     public:
         Driver(int address);
 
-        /** Read needed motor parameters from the controller */
-        void readMotorParameters();
+        /** Read needed motor parameters from the controller
+         *
+         * See @c getMotorRatings for explanations
+         *
+         * @see getMotorRatings setMotorRatings
+         */
+        MotorRatings readMotorRatings();
 
-        float getRatedSpeed() const;
+        /** Get the motor ratings currently used by this class for conversions
+         *
+         * Motor ratings can either be set explicitely (@c setMotorRatings) or
+         * read from the controller configuration (@c readMotorRatings). This
+         * method does not do any update, it only returns the values currently
+         * in use
+         */
+        MotorRatings getMotorRatings() const;
 
-        void setRatedSpeed(float speed);
+        /** Explicitely set the motor ratings
+         *
+         * See @c getMotorRatings for explanations
+         *
+         * @see getMotorRatings readMotorRatings
+         */
+        void setMotorRatings(MotorRatings const& ratings);
 
-        float getRatedTorque() const;
+        /** Set whether the position and speed feedback should directly use the encoder
+         *
+         * Unlike the motor speed reported by the controller, the encoder feedback is
+         * always available - even when control is off - and also gives position
+         *
+         * Generally speaking, it's best to use the encoder if there is one and
+         * use the other method when no encoder is present (sensorless setup)
+         */
+        void setUseEncoderFeedback(bool use);
 
-        void setRatedTorque(float torque);
-
-        float getRatedCurrent() const;
-
-        void setRatedCurrent(float current);
+        /* Get whether the feedback should use encoder readings or motor state registers
+         *
+         * @see getUseEncoderFeedback
+         */
+        bool getUseEncoderFeedback() const;
 
         /** Prepare the unit to receive control from the driver w/o enabling power */
         void prepare();

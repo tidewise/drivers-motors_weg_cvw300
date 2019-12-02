@@ -1,4 +1,5 @@
 #include <motors_weg_cvw300/Driver.hpp>
+#include <base/Angle.hpp>
 
 using namespace std;
 using namespace base;
@@ -6,50 +7,50 @@ using namespace motors_weg_cvw300;
 
 Driver::Driver(int address)
     : m_address(address) {
+    // default of 7ms is too low for the weg controller at 57600
+    setInterframeDelay(base::Time::fromMilliseconds(14));
 }
 
-void Driver::readMotorParameters() {
-    m_rated_current = readSingleRegister<float>(R_MOTOR_NOMINAL_CURRENT);
-    m_rated_speed =
+MotorRatings Driver::readMotorRatings() {
+    MotorRatings ratings;
+    ratings.encoder_count = readSingleRegister<uint16_t>(R_ENCODER_COUNT);
+    ratings.current = readSingleRegister<float>(R_MOTOR_NOMINAL_CURRENT) / 10;
+    ratings.speed =
         readSingleRegister<float>(R_MOTOR_NOMINAL_SPEED) * 2 * M_PI / 60;
     int rated_power_i = readSingleRegister<uint16_t>(R_MOTOR_NOMINAL_POWER);
-    float rated_power = 0;
-    if (rated_power_i == 0)
-        rated_power = 3000;
-    else if (rated_power_i == 1)
-        rated_power = 6000;
-    else if (rated_power_i == 2)
-        rated_power = 12000;
+    if (rated_power_i == 0) {
+        ratings.power = 3000;
+    }
+    else if (rated_power_i == 1) {
+        ratings.power = 6000;
+    }
+    else if (rated_power_i == 2) {
+        ratings.power = 12000;
+    }
     else {
-        throw std::invalid_argument("readMotorParameters(): unexpected rated "
+        throw std::invalid_argument("readMotorRatings(): unexpected rated "
                                     "power value in reply");
     }
 
-    m_rated_torque = rated_power / m_rated_speed;
+    ratings.torque = ratings.power / ratings.speed;
+    m_ratings = ratings;
+    return ratings;
 }
 
-float Driver::getRatedSpeed() const {
-    return m_rated_speed;
+void Driver::setMotorRatings(MotorRatings const& ratings) {
+    m_ratings = ratings;
 }
 
-void Driver::setRatedSpeed(float speed) {
-    m_rated_speed = speed;
+MotorRatings Driver::getMotorRatings() const {
+    return m_ratings;
 }
 
-float Driver::getRatedTorque() const {
-    return m_rated_torque;
+void Driver::setUseEncoderFeedback(bool use) {
+    m_use_encoder_feedback = use;
 }
 
-void Driver::setRatedTorque(float torque) {
-    m_rated_torque = torque;
-}
-
-float Driver::getRatedCurrent() const {
-    return m_rated_current;
-}
-
-void Driver::setRatedCurrent(float current) {
-    m_rated_current = current;
+bool Driver::getUseEncoderFeedback() const {
+    return m_use_encoder_feedback;
 }
 
 void Driver::prepare() {
@@ -177,11 +178,11 @@ void Driver::writeJointLimits(base::JointLimitRange const& limits) {
 }
 
 void Driver::writeSpeedCommand(float command) {
-    if (base::isUnset(m_rated_speed)) {
+    if (base::isUnset(m_ratings.speed)) {
         throw std::invalid_argument("writeSpeedCommand: define the rated speed before "
                                     "attempting to send a speed command");
     }
-    int16_t scaled_command = 8192 * command / m_rated_speed;
+    int16_t scaled_command = 8192 * command / m_ratings.speed;
     writeSingleRegister(R_SERIAL_REFERENCE_SPEED, scaled_command);
 }
 
@@ -189,12 +190,12 @@ void Driver::writeJointTorqueLimit(float limit, int register_id) {
     if (base::isUnknown(limit)) {
         return;
     }
-    else if (base::isUnknown(m_rated_torque)) {
+    else if (base::isUnknown(m_ratings.torque)) {
         throw std::invalid_argument("need to set rated torque with setMotorRatings "
                                     "before you can set a torque limit");
     }
 
-    writeSingleRegister<uint16_t>(register_id, std::abs(limit) / m_rated_torque * 1000);
+    writeSingleRegister<uint16_t>(register_id, std::abs(limit) / m_ratings.torque * 1000);
 }
 
 void Driver::writeRampConfiguration(configuration::Ramps const& ramps) {
@@ -220,26 +221,39 @@ void Driver::writeVectorialControlSettings(
 }
 
 CurrentState Driver::readCurrentState() {
-    uint16_t values[32];
-    readRegisters(values, m_address,
-                  false, R_MOTOR_SPEED, R_MOTOR_TORQUE - R_MOTOR_SPEED + 1);
+    uint16_t values[R_ENCODER_SPEED + 2];
+
+    readRegisters(values + R_MOTOR_SPEED, m_address, false, R_MOTOR_SPEED, 8);
+    if (m_use_encoder_feedback) {
+        readRegisters(values + R_ENCODER_SPEED, m_address, false, R_ENCODER_SPEED, 2);
+    }
 
     CurrentState state;
-    state.motor.speed = decodeRegister<float>(
-        values[R_MOTOR_SPEED - R_MOTOR_SPEED]) * 2 * M_PI / 60;
+    if (m_use_encoder_feedback) {
+        state.motor.speed = decodeRegister<float>(
+            values[R_ENCODER_SPEED]) * 2 * M_PI / 60;
+        float position = static_cast<float>(
+            values[R_ENCODER_PULSE_COUNTER] % m_ratings.encoder_count
+        ) / m_ratings.encoder_count * 2 * M_PI;
+        state.motor.position = base::Angle::normalizeRad(position);
+    }
+    else {
+        state.motor.speed = decodeRegister<float>(
+            values[R_MOTOR_SPEED]) * 2 * M_PI / 60;
+    }
     state.motor.raw = decodeRegister<float>(
-        values[R_INVERTER_OUTPUT_CURRENT - R_MOTOR_SPEED]) / 10;
+        values[R_INVERTER_OUTPUT_CURRENT]) / 10;
     state.battery_voltage = decodeRegister<float>(
-        values[R_BATTERY_VOLTAGE - R_MOTOR_SPEED]) / 10;
+        values[R_BATTERY_VOLTAGE]) / 10;
     state.inverter_output_frequency = decodeRegister<float>(
-        values[R_INVERTER_OUTPUT_FREQUENCY - R_MOTOR_SPEED]) / 10;
+        values[R_INVERTER_OUTPUT_FREQUENCY]) / 10;
     state.inverter_status = static_cast<InverterStatus>(
-        values[R_INVERTER_STATUS - R_MOTOR_SPEED]
+        values[R_INVERTER_STATUS]
     );
     state.inverter_output_voltage = decodeRegister<float>(
-        values[R_INVERTER_OUTPUT_VOLTAGE - R_MOTOR_SPEED]) / 10;
+        values[R_INVERTER_OUTPUT_VOLTAGE]) / 10;
     state.motor.effort  = decodeRegister<float>(
-        values[R_MOTOR_TORQUE - R_MOTOR_SPEED]) / 1000 * m_rated_torque;
+        values[R_MOTOR_TORQUE]) / 1000 * m_ratings.torque;
 
     if (state.motor.raw * state.motor.effort < 0) {
         state.motor.speed *= -1;
