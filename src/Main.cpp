@@ -70,6 +70,8 @@ int main(int argc, char** argv)
                 << "(" << ratings.speed / 2 / M_PI * 60 << " rpm)\n"
              << "Torque: " << ratings.torque << " N.m\n"
              << "Encoder Count: " << ratings.encoder_count << " ticks p. turn\n";
+
+        cout << "\n\nState:\n";
         auto state = driver.readCurrentState();
         cout << "Battery Voltage: " << state.battery_voltage << " V\n"
              << "Inverter Output Voltage: "  << state.inverter_output_voltage << " V\n"
@@ -81,6 +83,11 @@ int main(int argc, char** argv)
              << "Speed: " << state.motor.speed / 2 / M_PI << "\n"
              << "Torque: " << state.motor.effort << "\n"
              << "Current: " << state.motor.raw << "\n";
+
+        cout << "\n\nTemperatures:\n";
+        auto temperatures = driver.readTemperatures();
+        cout << "Air: " << temperatures.air << "\n"
+             << "Mosfet: " << temperatures.mosfet << "\n";
     }
     else if (cmd == "poll") {
         bool encoder = false;
