@@ -218,9 +218,9 @@ void Driver::writeJointTorqueLimit(float limit, int register_id) {
 
 void Driver::writeRampConfiguration(configuration::Ramps const& ramps) {
     writeSingleRegister<float>(R_RAMP_ACCELERATION_TIME,
-                               ramps.acceleration_time.toSeconds() * 10);
+                               ramps.acceleration_time.toSeconds());
     writeSingleRegister<float>(R_RAMP_DECELERATION_TIME,
-                               ramps.deceleration_time.toSeconds() * 10);
+                               ramps.deceleration_time.toSeconds());
     writeSingleRegister<uint16_t>(R_RAMP_TYPE, ramps.type);
 }
 

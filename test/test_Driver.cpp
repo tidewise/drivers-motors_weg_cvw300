@@ -218,8 +218,8 @@ TEST_F(DriverTest, it_writes_the_ramp_configuration) {
     ramps.deceleration_time = base::Time::fromMilliseconds(5100);
     ramps.type = configuration::RAMP_S_CURVE;
 
-    EXPECT_MODBUS_WRITE(5, 100, 12);
-    EXPECT_MODBUS_WRITE(5, 101, 51);
+    EXPECT_MODBUS_WRITE(5, 100, 1);
+    EXPECT_MODBUS_WRITE(5, 101, 5);
     EXPECT_MODBUS_WRITE(5, 104, 1);
     driver.writeRampConfiguration(ramps);
 }
