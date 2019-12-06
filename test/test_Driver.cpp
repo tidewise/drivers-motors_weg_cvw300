@@ -432,13 +432,10 @@ TEST_F(DriverTest, it_reads_the_temperatures) {
     ratings.torque = 42;
     driver.setMotorRatings(ratings);
 
-    EXPECT_MODBUS_READ(
-        5, false, 30,
-        { 1, 2, 3, 4, (uint16_t)-5 }
-    );
+    EXPECT_MODBUS_READ(5, false, 30, { 1 });
+    EXPECT_MODBUS_READ(5, false, 34, { (uint16_t)-5 });
 
     InverterTemperatures temps = driver.readTemperatures();
     ASSERT_FLOAT_EQ(0.1, temps.mosfet.getCelsius());
-    ASSERT_FLOAT_EQ(0.4, temps.mosfet2.getCelsius());
     ASSERT_FLOAT_EQ(-0.5, temps.air.getCelsius());
 }

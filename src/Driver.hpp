@@ -30,6 +30,7 @@ namespace motors_weg_cvw300 {
             R_INVERTER_OUTPUT_VOLTAGE = 7,
             R_MOTOR_TORQUE = 9,
             R_TEMPERATURE_MOSFET = 30,
+            R_TEMPERATURE_AIR = 34,
             R_ENCODER_SPEED = 38,
             R_ENCODER_PULSE_COUNTER = 39,
 

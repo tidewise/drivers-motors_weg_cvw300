@@ -271,16 +271,11 @@ CurrentState Driver::readCurrentState() {
 
 InverterTemperatures Driver::readTemperatures() {
     InverterTemperatures temperatures;
-    uint16_t raw[5];
-    readRegisters(raw, m_address, false, R_TEMPERATURE_MOSFET, 5);
-    temperatures.mosfet  = Temperature::fromCelsius(
-        decodeRegister<float>(raw[0]) / 10
+    temperatures.mosfet = Temperature::fromCelsius(
+        readSingleRegister<float>(R_TEMPERATURE_MOSFET) / 10
     );
-    temperatures.mosfet2 = Temperature::fromCelsius(
-        decodeRegister<float>(raw[3]) / 10
-    );
-    temperatures.air     = Temperature::fromCelsius(
-        decodeRegister<float>(raw[4]) / 10
+    temperatures.air = Temperature::fromCelsius(
+        readSingleRegister<float>(R_TEMPERATURE_AIR) / 10
     );
     return temperatures;
 }

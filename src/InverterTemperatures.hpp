@@ -8,7 +8,6 @@ namespace motors_weg_cvw300 {
      */
     struct InverterTemperatures {
         base::Temperature mosfet;
-        base::Temperature mosfet2;
         base::Temperature air;
     };
 }
