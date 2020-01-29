@@ -35,6 +35,19 @@ TEST_F(DriverTest, it_reads_motor_parameters) {
     ASSERT_FLOAT_EQ(6000, ratings.power);
 }
 
+TEST_F(DriverTest, it_keeps_the_encoder_scale_parameter) {
+    IODRIVERS_BASE_MOCK();
+
+    driver.setEncoderScale(4);
+
+    EXPECT_MODBUS_READ(5, false, 405, { 1024 }); // 1024 ticks per turn
+    EXPECT_MODBUS_READ(5, false, 401, { 10 }); // 1A nominal
+    EXPECT_MODBUS_READ(5, false, 402, { 500 }); // 500rpm nominal
+    EXPECT_MODBUS_READ(5, false, 404, { 1 }); // 6 kW
+    auto ratings = driver.readMotorRatings();
+    ASSERT_EQ(4, ratings.encoder_scale);
+}
+
 TEST_F(DriverTest, it_prepares_the_unit_for_serial_control) {
     IODRIVERS_BASE_MOCK();
 
@@ -205,35 +218,10 @@ TEST_F(DriverTest, it_writes_the_ramp_configuration) {
     ramps.deceleration_time = base::Time::fromMilliseconds(5100);
     ramps.type = configuration::RAMP_S_CURVE;
 
-    EXPECT_MODBUS_WRITE(5, 100, 12);
-    EXPECT_MODBUS_WRITE(5, 101, 51);
+    EXPECT_MODBUS_WRITE(5, 100, 1);
+    EXPECT_MODBUS_WRITE(5, 101, 5);
     EXPECT_MODBUS_WRITE(5, 104, 1);
     driver.writeRampConfiguration(ramps);
-}
-
-TEST_F(DriverTest, it_writes_the_vectorial_controller_settings) {
-    IODRIVERS_BASE_MOCK();
-    configuration::VectorialControlSettings settings;
-    settings.speed_P = 1.1;
-    settings.speed_I = 2.2;
-    settings.speed_D = 3.3;
-    settings.current_P = 4.4;
-    settings.current_I = 5.5;
-    settings.flux_P = 6.6;
-    settings.flux_I = 7.7;
-    settings.flux_nominal = 0.8;
-    settings.flux_maximal = 1.2;
-
-    EXPECT_MODBUS_WRITE(5, 161, 11);
-    EXPECT_MODBUS_WRITE(5, 162, 2200);
-    EXPECT_MODBUS_WRITE(5, 166, 330);
-    EXPECT_MODBUS_WRITE(5, 167, 440);
-    EXPECT_MODBUS_WRITE(5, 168, 5500);
-    EXPECT_MODBUS_WRITE(5, 175, 66);
-    EXPECT_MODBUS_WRITE(5, 176, 7700);
-    EXPECT_MODBUS_WRITE(5, 178, 80);
-    EXPECT_MODBUS_WRITE(5, 179, 120);
-    driver.writeVectorialControlSettings(settings);
 }
 
 TEST_F(DriverTest, it_reads_the_current_state) {
@@ -272,7 +260,8 @@ TEST_F(DriverTest, it_optionally_uses_the_encoder_for_position_and_speed_feedbac
     MotorRatings ratings;
     ratings.current = 100;
     ratings.torque = 42;
-    ratings.encoder_count = 1024;
+    ratings.encoder_scale = 2;
+    ratings.encoder_count = 512;
     driver.setMotorRatings(ratings);
     driver.setUseEncoderFeedback(true);
 
@@ -305,12 +294,46 @@ TEST_F(DriverTest, it_optionally_uses_the_encoder_for_position_and_speed_feedbac
     ASSERT_EQ(STATUS_AUTOTUNING, state.inverter_status);
 }
 
+TEST_F(DriverTest, it_does_not_report_position_if_the_encoder_scale_is_zero) {
+    IODRIVERS_BASE_MOCK();
+
+    MotorRatings ratings;
+    ratings.current = 100;
+    ratings.torque = 42;
+    ratings.encoder_scale = 0;
+    ratings.encoder_count = 1024;
+    driver.setMotorRatings(ratings);
+    driver.setUseEncoderFeedback(true);
+
+    EXPECT_MODBUS_READ(5, false, 2,
+        { 15, // speed 0002
+          (uint16_t)-12, // current 0003
+          421, // battery voltage 0004
+          502, // frequency 0005
+          4, // inverter status 0006
+          128, // output voltage 0007
+          0, // 0008
+          243 // torque 0009
+        }
+    );
+
+    EXPECT_MODBUS_READ(5, false, 38,
+        { 25, // encoder speed 0038
+          256 // encoder position
+        }
+    );
+
+    CurrentState state = driver.readCurrentState();
+    ASSERT_TRUE(base::isUnknown(state.motor.position));
+}
+
 TEST_F(DriverTest, it_handles_an_encoder_feedback_that_has_not_wrapped_around) {
     IODRIVERS_BASE_MOCK();
 
     MotorRatings ratings;
     ratings.current = 100;
     ratings.torque = 42;
+    ratings.encoder_scale = 1;
     ratings.encoder_count = 1024;
     driver.setMotorRatings(ratings);
     driver.setUseEncoderFeedback(true);
@@ -332,7 +355,8 @@ TEST_F(DriverTest, it_normalizes_the_position) {
     MotorRatings ratings;
     ratings.current = 100;
     ratings.torque = 42;
-    ratings.encoder_count = 1024;
+    ratings.encoder_scale = 4;
+    ratings.encoder_count = 256;
     driver.setMotorRatings(ratings);
     driver.setUseEncoderFeedback(true);
 
@@ -408,13 +432,10 @@ TEST_F(DriverTest, it_reads_the_temperatures) {
     ratings.torque = 42;
     driver.setMotorRatings(ratings);
 
-    EXPECT_MODBUS_READ(
-        5, false, 30,
-        { 1, 2, 3, 4, (uint16_t)-5 }
-    );
+    EXPECT_MODBUS_READ(5, false, 30, { 1 });
+    EXPECT_MODBUS_READ(5, false, 34, { (uint16_t)-5 });
 
     InverterTemperatures temps = driver.readTemperatures();
     ASSERT_FLOAT_EQ(0.1, temps.mosfet.getCelsius());
-    ASSERT_FLOAT_EQ(0.4, temps.mosfet2.getCelsius());
     ASSERT_FLOAT_EQ(-0.5, temps.air.getCelsius());
 }

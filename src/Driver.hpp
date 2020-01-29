@@ -30,6 +30,7 @@ namespace motors_weg_cvw300 {
             R_INVERTER_OUTPUT_VOLTAGE = 7,
             R_MOTOR_TORQUE = 9,
             R_TEMPERATURE_MOSFET = 30,
+            R_TEMPERATURE_AIR = 34,
             R_ENCODER_SPEED = 38,
             R_ENCODER_PULSE_COUNTER = 39,
 
@@ -57,6 +58,7 @@ namespace motors_weg_cvw300 {
             R_REM_RUN_STOP_SELECTION = 227,
             R_REM_JOG_SELECTION = 228,
 
+            R_CONFIG_SAVE = 303,
             R_SERIAL_ERROR_ACTION = 313,
             R_SERIAL_WATCHDOG = 314,
 
@@ -79,6 +81,17 @@ namespace motors_weg_cvw300 {
 
     public:
         Driver(int address);
+
+        /** Save current configuration */
+        void configSave();
+
+        /** Set the encoder scale parameter of the encoder ratings
+         *
+         * This must be set manually if one wants an accurate position
+         * reading in the joint state. The default of zero disables
+         * position reporting altogether
+         */
+        void setEncoderScale(uint16_t scale);
 
         /** Read needed motor parameters from the controller
          *
@@ -149,11 +162,6 @@ namespace motors_weg_cvw300 {
 
         /** Change the ramp configuration */
         void writeRampConfiguration(configuration::Ramps const& ramps);
-
-        /** Change the configuration of the vector control mode */
-        void writeVectorialControlSettings(
-            configuration::VectorialControlSettings const& ramps
-        );
 
         CurrentState readCurrentState();
 

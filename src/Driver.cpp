@@ -1,5 +1,6 @@
 #include <motors_weg_cvw300/Driver.hpp>
 #include <base/Angle.hpp>
+#include <modbus/RTU.hpp>
 
 using namespace std;
 using namespace base;
@@ -8,11 +9,11 @@ using namespace motors_weg_cvw300;
 Driver::Driver(int address)
     : m_address(address) {
     // default of 7ms is too low for the weg controller at 57600
-    setInterframeDelay(base::Time::fromMilliseconds(14));
+    setInterframeDelay(base::Time::fromMilliseconds(20));
 }
 
 MotorRatings Driver::readMotorRatings() {
-    MotorRatings ratings;
+    MotorRatings ratings = m_ratings;
     ratings.encoder_count = readSingleRegister<uint16_t>(R_ENCODER_COUNT);
     ratings.current = readSingleRegister<float>(R_MOTOR_NOMINAL_CURRENT) / 10;
     ratings.speed =
@@ -37,12 +38,16 @@ MotorRatings Driver::readMotorRatings() {
     return ratings;
 }
 
-void Driver::setMotorRatings(MotorRatings const& ratings) {
-    m_ratings = ratings;
+void Driver::setEncoderScale(uint16_t scale) {
+    m_ratings.encoder_scale = scale;
 }
 
 MotorRatings Driver::getMotorRatings() const {
     return m_ratings;
+}
+
+void Driver::setMotorRatings(MotorRatings const& ratings) {
+    m_ratings = ratings;
 }
 
 void Driver::setUseEncoderFeedback(bool use) {
@@ -91,6 +96,19 @@ void Driver::writeSerialWatchdog(base::Time const& time,
                                  configuration::CommunicationErrorAction action) {
     writeSingleRegister<uint16_t>(R_SERIAL_ERROR_ACTION, action);
     writeSingleRegister<float>(R_SERIAL_WATCHDOG, time.toSeconds() * 10);
+}
+
+void Driver::configSave() {
+    for (int i = 0; i < 3; ++i) {
+        // Writing this causes an invalid CRC, and then re-reading it fails as
+        // well. Write it three times blindly :(
+        try {
+            modbus::Master::writeSingleRegister(m_address, R_CONFIG_SAVE, 1);
+        }
+        catch (modbus::RTU::InvalidCRC const&) {
+        }
+        usleep(100000);
+    }
 }
 
 template<typename T>
@@ -200,24 +218,10 @@ void Driver::writeJointTorqueLimit(float limit, int register_id) {
 
 void Driver::writeRampConfiguration(configuration::Ramps const& ramps) {
     writeSingleRegister<float>(R_RAMP_ACCELERATION_TIME,
-                               ramps.acceleration_time.toSeconds() * 10);
+                               ramps.acceleration_time.toSeconds());
     writeSingleRegister<float>(R_RAMP_DECELERATION_TIME,
-                               ramps.deceleration_time.toSeconds() * 10);
+                               ramps.deceleration_time.toSeconds());
     writeSingleRegister<uint16_t>(R_RAMP_TYPE, ramps.type);
-}
-
-void Driver::writeVectorialControlSettings(
-    configuration::VectorialControlSettings const& settings
-) {
-    writeSingleRegister<float>(R_GAIN_SPEED_P, settings.speed_P * 10);
-    writeSingleRegister<float>(R_GAIN_SPEED_I, settings.speed_I * 1000);
-    writeSingleRegister<float>(R_GAIN_SPEED_D, settings.speed_D * 100);
-    writeSingleRegister<float>(R_GAIN_CURRENT_P, settings.current_P * 100);
-    writeSingleRegister<float>(R_GAIN_CURRENT_I, settings.current_I * 1000);
-    writeSingleRegister<float>(R_GAIN_FLUX_P, settings.flux_P * 10);
-    writeSingleRegister<float>(R_GAIN_FLUX_I, settings.flux_I * 1000);
-    writeSingleRegister<float>(R_FLUX_NOMINAL, settings.flux_nominal * 100);
-    writeSingleRegister<float>(R_FLUX_MAXIMAL, settings.flux_maximal * 100);
 }
 
 CurrentState Driver::readCurrentState() {
@@ -232,10 +236,13 @@ CurrentState Driver::readCurrentState() {
     if (m_use_encoder_feedback) {
         state.motor.speed = decodeRegister<float>(
             values[R_ENCODER_SPEED]) * 2 * M_PI / 60;
-        float position = static_cast<float>(
-            values[R_ENCODER_PULSE_COUNTER] % m_ratings.encoder_count
-        ) / m_ratings.encoder_count * 2 * M_PI;
-        state.motor.position = base::Angle::normalizeRad(position);
+        if (m_ratings.encoder_scale) {
+            uint32_t ticks_per_turn = m_ratings.encoder_count * m_ratings.encoder_scale;
+            float position = static_cast<float>(
+                values[R_ENCODER_PULSE_COUNTER] % ticks_per_turn
+            ) / ticks_per_turn * 2 * M_PI;
+            state.motor.position = base::Angle::normalizeRad(position);
+        }
     }
     else {
         state.motor.speed = decodeRegister<float>(
@@ -264,16 +271,11 @@ CurrentState Driver::readCurrentState() {
 
 InverterTemperatures Driver::readTemperatures() {
     InverterTemperatures temperatures;
-    uint16_t raw[5];
-    readRegisters(raw, m_address, false, R_TEMPERATURE_MOSFET, 5);
-    temperatures.mosfet  = Temperature::fromCelsius(
-        decodeRegister<float>(raw[0]) / 10
+    temperatures.mosfet = Temperature::fromCelsius(
+        readSingleRegister<float>(R_TEMPERATURE_MOSFET) / 10
     );
-    temperatures.mosfet2 = Temperature::fromCelsius(
-        decodeRegister<float>(raw[3]) / 10
-    );
-    temperatures.air     = Temperature::fromCelsius(
-        decodeRegister<float>(raw[4]) / 10
+    temperatures.air = Temperature::fromCelsius(
+        readSingleRegister<float>(R_TEMPERATURE_AIR) / 10
     );
     return temperatures;
 }

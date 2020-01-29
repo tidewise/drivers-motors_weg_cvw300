@@ -86,18 +86,6 @@ namespace motors_weg_cvw300 {
             /** Ramp type */
             RampType type = RAMP_LINEAR;
         };
-
-        struct VectorialControlSettings {
-            float speed_P = 7.4;
-            float speed_I = 0.023;
-            float speed_D = 0;
-            float current_P = 0.50;
-            float current_I = 0.010;
-            float flux_P = 2;
-            float flux_I = 0.020;
-            float flux_nominal = 1;
-            float flux_maximal = 1.2;
-        };
     }
 }
 
