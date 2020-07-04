@@ -7,6 +7,7 @@
 #include <motors_weg_cvw300/Configuration.hpp>
 #include <motors_weg_cvw300/InverterTemperatures.hpp>
 #include <motors_weg_cvw300/CurrentState.hpp>
+#include <motors_weg_cvw300/FaultState.hpp>
 #include <motors_weg_cvw300/MotorRatings.hpp>
 
 namespace motors_weg_cvw300 {
@@ -33,6 +34,9 @@ namespace motors_weg_cvw300 {
             R_TEMPERATURE_AIR = 34,
             R_ENCODER_SPEED = 38,
             R_ENCODER_PULSE_COUNTER = 39,
+
+            R_CURRENT_ALARM = 48,
+            R_CURRENT_FAULT = 49,
 
             R_RAMP_ACCELERATION_TIME = 100,
             R_RAMP_DECELERATION_TIME = 101,
@@ -164,6 +168,8 @@ namespace motors_weg_cvw300 {
         void writeRampConfiguration(configuration::Ramps const& ramps);
 
         CurrentState readCurrentState();
+
+        FaultState readFaultState();
 
         InverterTemperatures readTemperatures();
     };

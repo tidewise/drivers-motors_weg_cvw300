@@ -29,6 +29,7 @@ void usage(ostream& stream) {
            << "Available Commands\n"
            << "  status [--encoder]: query the controller status\n"
            << "  poll [--encoder]: repeatedly display the motor state\n"
+           << "  prepare: configures the drive and resets failure(s)\n"
            << "  cfg-dump: output all configuration variables\n"
            << "  cfg-load: set configuration from a dump file\n"
            << "  cfg-diff: compare configuration of a file with the controller's\n"
@@ -73,11 +74,14 @@ int main(int argc, char** argv)
 
         cout << "\n\nState:\n";
         auto state = driver.readCurrentState();
+        auto fault_state = driver.readFaultState();
         cout << "Battery Voltage: " << state.battery_voltage << " V\n"
              << "Inverter Output Voltage: "  << state.inverter_output_voltage << " V\n"
              << "Inverter Output Frequency: "
                 << state.inverter_output_frequency << " Hz\n"
              << "Status: "  << statusToString(state.inverter_status) << "\n"
+             << "  Current alarm: " << fault_state.current_alarm << "\n"
+             << "  Current fault: " << fault_state.current_fault << "\n"
              << "Position: "
                 << base::Angle::fromRad(state.motor.position).getDeg() << " deg\n"
              << "Speed: " << state.motor.speed / 2 / M_PI << "\n"

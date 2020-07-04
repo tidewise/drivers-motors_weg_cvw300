@@ -269,6 +269,17 @@ CurrentState Driver::readCurrentState() {
     return state;
 }
 
+FaultState Driver::readFaultState() {
+    uint16_t values[R_CURRENT_ALARM + 2];
+    readRegisters(values + R_CURRENT_ALARM, m_address, false, R_CURRENT_ALARM, 2);
+
+    FaultState state;
+    state.time = base::Time::now();
+    state.current_alarm = values[R_CURRENT_ALARM];
+    state.current_fault = values[R_CURRENT_FAULT];
+    return state;
+}
+
 InverterTemperatures Driver::readTemperatures() {
     InverterTemperatures temperatures;
     temperatures.mosfet = Temperature::fromCelsius(
