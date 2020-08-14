@@ -225,9 +225,10 @@ void Driver::writeRampConfiguration(configuration::Ramps const& ramps) {
 }
 
 CurrentState Driver::readCurrentState() {
-    uint16_t values[R_ENCODER_SPEED + 2];
+    uint16_t values[R_ENCODER_SPEED + 1];
 
     readRegisters(values + R_MOTOR_SPEED, m_address, false, R_MOTOR_SPEED, 8);
+    readRegisters(values + R_MOTOR_OVERLOAD, m_address, false, R_MOTOR_OVERLOAD, 1);
     if (m_use_encoder_feedback) {
         readRegisters(values + R_ENCODER_SPEED, m_address, false, R_ENCODER_SPEED, 2);
     }
@@ -248,6 +249,7 @@ CurrentState Driver::readCurrentState() {
         state.motor.speed = decodeRegister<float>(
             values[R_MOTOR_SPEED]) * 2 * M_PI / 60;
     }
+    state.motor_overload_ratio = decodeRegister<float>(values[R_MOTOR_OVERLOAD]) / 100;
     state.motor.raw = decodeRegister<float>(
         values[R_INVERTER_OUTPUT_CURRENT]) / 10;
     state.battery_voltage = decodeRegister<float>(

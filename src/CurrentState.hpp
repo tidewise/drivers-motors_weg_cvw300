@@ -15,6 +15,9 @@ namespace motors_weg_cvw300 {
         float inverter_output_voltage;
         float inverter_output_frequency;
 
+        /** Motor overload in percent (between 0 and 1) */
+        float motor_overload_ratio;
+
         InverterStatus inverter_status;
     };
 }
