@@ -244,6 +244,11 @@ TEST_F(DriverTest, it_reads_the_current_state) {
         }
     );
 
+    EXPECT_MODBUS_READ(5, false, 37,
+        { 23, // motor overload ratio 0037
+        }
+    );
+
     CurrentState state = driver.readCurrentState();
     ASSERT_FLOAT_EQ(-15 * 2 * M_PI / 60, state.motor.speed);
     ASSERT_FLOAT_EQ(10.206, state.motor.effort);
@@ -251,6 +256,7 @@ TEST_F(DriverTest, it_reads_the_current_state) {
     ASSERT_FLOAT_EQ(42.1, state.battery_voltage);
     ASSERT_FLOAT_EQ(12.8, state.inverter_output_voltage);
     ASSERT_FLOAT_EQ(50.2, state.inverter_output_frequency);
+    ASSERT_FLOAT_EQ(0.23, state.motor_overload_ratio);
     ASSERT_EQ(STATUS_AUTOTUNING, state.inverter_status);
 }
 
@@ -277,8 +283,9 @@ TEST_F(DriverTest, it_optionally_uses_the_encoder_for_position_and_speed_feedbac
         }
     );
 
-    EXPECT_MODBUS_READ(5, false, 38,
-        { 25, // encoder speed 0038
+    EXPECT_MODBUS_READ(5, false, 37,
+        { 42, // motor overload ratio 0037
+          25, // encoder speed 0038
           256 // encoder position
         }
     );
@@ -291,6 +298,7 @@ TEST_F(DriverTest, it_optionally_uses_the_encoder_for_position_and_speed_feedbac
     ASSERT_FLOAT_EQ(42.1, state.battery_voltage);
     ASSERT_FLOAT_EQ(12.8, state.inverter_output_voltage);
     ASSERT_FLOAT_EQ(50.2, state.inverter_output_frequency);
+    ASSERT_FLOAT_EQ(0.42, state.motor_overload_ratio);
     ASSERT_EQ(STATUS_AUTOTUNING, state.inverter_status);
 }
 
@@ -317,8 +325,9 @@ TEST_F(DriverTest, it_does_not_report_position_if_the_encoder_scale_is_zero) {
         }
     );
 
-    EXPECT_MODBUS_READ(5, false, 38,
-        { 25, // encoder speed 0038
+    EXPECT_MODBUS_READ(5, false, 37,
+        { 0,
+          25, // encoder speed 0038
           256 // encoder position
         }
     );
@@ -339,8 +348,9 @@ TEST_F(DriverTest, it_handles_an_encoder_feedback_that_has_not_wrapped_around) {
     driver.setUseEncoderFeedback(true);
 
     EXPECT_MODBUS_READ(5, false, 2, { 0, 0, 0, 0, 0, 0, 0, 0 });
-    EXPECT_MODBUS_READ(5, false, 38,
-        { 25, // encoder speed 0038
+    EXPECT_MODBUS_READ(5, false, 37,
+        { 0,
+          25, // encoder speed 0038
           1024 + 256 // encoder position
         }
     );
@@ -361,8 +371,9 @@ TEST_F(DriverTest, it_normalizes_the_position) {
     driver.setUseEncoderFeedback(true);
 
     EXPECT_MODBUS_READ(5, false, 2, { 0, 0, 0, 0, 0, 0, 0, 0 });
-    EXPECT_MODBUS_READ(5, false, 38,
-        { 25, // encoder speed 0038
+    EXPECT_MODBUS_READ(5, false, 37,
+        { 0,
+          25, // encoder speed 0038
           768 // encoder position
         }
     );
@@ -380,6 +391,7 @@ TEST_F(DriverTest, it_determines_the_motor_direction_with_torque_positive_and_cu
     driver.setMotorRatings(ratings);
 
     EXPECT_MODBUS_READ(5, false, 2, { 1, 1, 0, 0, 0, 0, 0, 1 });
+    EXPECT_MODBUS_READ(5, false, 37, { 0 });
 
     CurrentState state = driver.readCurrentState();
     ASSERT_TRUE(state.motor.speed > 0);
@@ -393,6 +405,7 @@ TEST_F(DriverTest, it_determines_the_motor_direction_with_torque_negative_and_cu
     driver.setMotorRatings(ratings);
 
     EXPECT_MODBUS_READ(5, false, 2, { 1, (uint16_t)-1, 0, 0, 0, 0, 0, (uint16_t)-1 });
+    EXPECT_MODBUS_READ(5, false, 37, { 0 });
 
     CurrentState state = driver.readCurrentState();
     ASSERT_TRUE(state.motor.speed > 0);
@@ -406,6 +419,7 @@ TEST_F(DriverTest, it_determines_the_motor_direction_with_torque_positive_and_cu
     driver.setMotorRatings(ratings);
 
     EXPECT_MODBUS_READ(5, false, 2, { 1, (uint16_t)-1, 0, 0, 0, 0, 0, 1 });
+    EXPECT_MODBUS_READ(5, false, 37, { 0 });
 
     CurrentState state = driver.readCurrentState();
     ASSERT_TRUE(state.motor.speed < 0);
@@ -419,6 +433,7 @@ TEST_F(DriverTest, it_determines_the_motor_direction_with_torque_negative_and_cu
     driver.setMotorRatings(ratings);
 
     EXPECT_MODBUS_READ(5, false, 2, { 1, 1, 0, 0, 0, 0, 0, (uint16_t)-1 });
+    EXPECT_MODBUS_READ(5, false, 37, { 0 });
 
     CurrentState state = driver.readCurrentState();
     ASSERT_TRUE(state.motor.speed < 0);
