@@ -270,13 +270,34 @@ CurrentState Driver::readCurrentState() {
 }
 
 FaultState Driver::readFaultState() {
-    uint16_t values[R_CURRENT_ALARM + 2];
+    uint16_t values[R_LAST_FAULT_CURRENT + 6];
     readRegisters(values + R_CURRENT_ALARM, m_address, false, R_CURRENT_ALARM, 2);
+    for (int i = 0; i < 5; ++i) {
+        readRegisters(values + R_LAST_FAULT + 4 * i, m_address, false,
+                      R_LAST_FAULT + 4 * i, 1);
+    }
+    readRegisters(values + R_LAST_FAULT_CURRENT,
+                  m_address, false, R_LAST_FAULT_CURRENT, 6);
 
     FaultState state;
     state.time = base::Time::now();
     state.current_alarm = values[R_CURRENT_ALARM];
     state.current_fault = values[R_CURRENT_FAULT];
+    for (int i = 0; i < 5; ++i) {
+        state.fault_history[i] = values[R_LAST_FAULT + 4 * i];
+    }
+    state.current = decodeRegister<float>(
+        values[R_LAST_FAULT_CURRENT]) / 10;
+    state.battery_voltage = decodeRegister<float>(
+        values[R_LAST_FAULT_BATTERY_VOLTAGE]) / 10;
+    state.speed = decodeRegister<float>(
+        values[R_LAST_FAULT_SPEED]) * 2 * M_PI / 60;
+    state.command = decodeRegister<float>(
+        values[R_LAST_FAULT_COMMAND]) * 2 * M_PI / 60;
+    state.inverter_output_frequency = decodeRegister<float>(
+        values[R_LAST_FAULT_INVERTER_OUTPUT_FREQUENCY]) / 10;
+    state.inverter_output_voltage = decodeRegister<float>(
+        values[R_LAST_FAULT_INVERTER_OUTPUT_VOLTAGE]) / 10;
     return state;
 }
 
