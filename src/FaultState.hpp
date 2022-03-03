@@ -16,7 +16,6 @@ namespace motors_weg_cvw300 {
         base::Time time;
 
         uint16_t current_fault = 0;
-        uint16_t current_alarm = 0;
 
         /** Code of the last occuring faults
          *

@@ -269,9 +269,15 @@ CurrentState Driver::readCurrentState() {
     return state;
 }
 
+int Driver::readCurrentAlarm() {
+    uint16_t value;
+    readRegisters(&value, m_address, false, R_CURRENT_ALARM, 1);
+    return value;
+}
+
 FaultState Driver::readFaultState() {
     uint16_t values[R_LAST_FAULT_CURRENT + 6];
-    readRegisters(values + R_CURRENT_ALARM, m_address, false, R_CURRENT_ALARM, 2);
+    readRegisters(values + R_CURRENT_FAULT, m_address, false, R_CURRENT_FAULT, 1);
     for (int i = 0; i < 5; ++i) {
         readRegisters(values + R_LAST_FAULT + 4 * i, m_address, false,
                       R_LAST_FAULT + 4 * i, 1);
@@ -281,7 +287,6 @@ FaultState Driver::readFaultState() {
 
     FaultState state;
     state.time = base::Time::now();
-    state.current_alarm = values[R_CURRENT_ALARM];
     state.current_fault = values[R_CURRENT_FAULT];
     for (int i = 0; i < 5; ++i) {
         state.fault_history[i] = values[R_LAST_FAULT + 4 * i];

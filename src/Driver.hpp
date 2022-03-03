@@ -178,6 +178,7 @@ namespace motors_weg_cvw300 {
 
         CurrentState readCurrentState();
 
+        int readCurrentAlarm();
         FaultState readFaultState();
 
         InverterTemperatures readTemperatures();

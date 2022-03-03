@@ -455,6 +455,12 @@ TEST_F(DriverTest, it_reads_the_temperatures) {
     ASSERT_FLOAT_EQ(-0.5, temps.air.getCelsius());
 }
 
+TEST_F(DriverTest, it_reads_the_current_alarm) {
+    IODRIVERS_BASE_MOCK();
+    EXPECT_MODBUS_READ(5, false, 48, { 1 });
+    ASSERT_EQ(1, driver.readCurrentAlarm());
+}
+
 TEST_F(DriverTest, it_reads_the_fault_state) {
     IODRIVERS_BASE_MOCK();
 
@@ -463,7 +469,7 @@ TEST_F(DriverTest, it_reads_the_fault_state) {
     ratings.torque = 42;
     driver.setMotorRatings(ratings);
 
-    EXPECT_MODBUS_READ(5, false, 48, { 1, 2 });
+    EXPECT_MODBUS_READ(5, false, 49, { 2 });
     EXPECT_MODBUS_READ(5, false, 50, { 3 });
     EXPECT_MODBUS_READ(5, false, 54, { 4 });
     EXPECT_MODBUS_READ(5, false, 58, { 5 });
@@ -472,7 +478,6 @@ TEST_F(DriverTest, it_reads_the_fault_state) {
     EXPECT_MODBUS_READ(5, false, 90, { 11, 12, 13, 14, 15, 16 });
 
     FaultState state = driver.readFaultState();
-    ASSERT_EQ(1, state.current_alarm);
     ASSERT_EQ(2, state.current_fault);
     ASSERT_EQ(3, state.fault_history[0]);
     ASSERT_EQ(4, state.fault_history[1]);

@@ -81,7 +81,6 @@ int main(int argc, char** argv)
              << "Inverter Output Frequency: "
                 << state.inverter_output_frequency << " Hz\n"
              << "Status: "  << statusToString(state.inverter_status) << "\n"
-             << "  Current alarm: " << fault_state.current_alarm << "\n"
              << "  Current fault: " << fault_state.current_fault << "\n"
              << "Position: "
                 << base::Angle::fromRad(state.motor.position).getDeg() << " deg\n"
@@ -130,7 +129,6 @@ int main(int argc, char** argv)
         driver.readMotorRatings();
         auto state = driver.readFaultState();
         cout << "Current Fault: " << state.current_fault << "\n"
-             << "Current Alarm: " << state.current_alarm << "\n"
              << "Fault History:";
         for (int i = 0; i < 5; ++i) {
             cout << " " << state.fault_history[i];
