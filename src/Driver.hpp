@@ -39,6 +39,14 @@ namespace motors_weg_cvw300 {
             R_CURRENT_ALARM = 48,
             R_CURRENT_FAULT = 49,
 
+            R_LAST_FAULT = 50,
+            R_LAST_FAULT_CURRENT = 90,
+            R_LAST_FAULT_BATTERY_VOLTAGE = 91,
+            R_LAST_FAULT_SPEED = 92,
+            R_LAST_FAULT_COMMAND = 93,
+            R_LAST_FAULT_INVERTER_OUTPUT_FREQUENCY = 94,
+            R_LAST_FAULT_INVERTER_OUTPUT_VOLTAGE = 95,
+
             R_RAMP_ACCELERATION_TIME = 100,
             R_RAMP_DECELERATION_TIME = 101,
             R_RAMP_TYPE = 104,
@@ -170,6 +178,7 @@ namespace motors_weg_cvw300 {
 
         CurrentState readCurrentState();
 
+        int readCurrentAlarm();
         FaultState readFaultState();
 
         InverterTemperatures readTemperatures();

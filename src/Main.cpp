@@ -30,6 +30,7 @@ void usage(ostream& stream) {
            << "  status [--encoder]: query the controller status\n"
            << "  poll [--encoder]: repeatedly display the motor state\n"
            << "  prepare: configures the drive and resets failure(s)\n"
+           << "  fault-state: read current and historical fault state\n"
            << "  cfg-dump: output all configuration variables\n"
            << "  cfg-load: set configuration from a dump file\n"
            << "  cfg-diff: compare configuration of a file with the controller's\n"
@@ -80,7 +81,6 @@ int main(int argc, char** argv)
              << "Inverter Output Frequency: "
                 << state.inverter_output_frequency << " Hz\n"
              << "Status: "  << statusToString(state.inverter_status) << "\n"
-             << "  Current alarm: " << fault_state.current_alarm << "\n"
              << "  Current fault: " << fault_state.current_fault << "\n"
              << "Position: "
                 << base::Angle::fromRad(state.motor.position).getDeg() << " deg\n"
@@ -123,6 +123,25 @@ int main(int argc, char** argv)
                  << setw(6) << state.motor.effort << " "
                  << setw(6) << state.motor.raw << "\n";
         }
+    }
+    else if (cmd == "fault-state") {
+        Driver driver(id);
+        driver.readMotorRatings();
+        auto state = driver.readFaultState();
+        cout << "Current Fault: " << state.current_fault << "\n"
+             << "Fault History:";
+        for (int i = 0; i < 5; ++i) {
+            cout << " " << state.fault_history[i];
+        }
+        cout << "\n"
+             << "State at point of last fault:\n"
+             << "Current: " << state.current << " A\n"
+             << "Battery Voltage: " << state.battery_voltage << " V\n"
+             << "Speed: " << static_cast<int>(state.speed / 2 / M_PI * 60) << " RPM\n"
+             << "Command: " << static_cast<int>(state.command / 2 / M_PI * 60) << " RPM\n"
+             << "Inverter Output Frequency: " << state.inverter_output_frequency << " Hz\n"
+             << "Inverter Output Voltage: " << state.inverter_output_voltage << " V"
+             << endl;
     }
     else if (cmd == "cfg-dump") {
         if (argc != 4) {
