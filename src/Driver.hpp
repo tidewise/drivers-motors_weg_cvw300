@@ -87,9 +87,6 @@ namespace motors_weg_cvw300 {
         template<typename T>
         T readSingleRegister(int register_id);
 
-        template<typename T>
-        void writeSingleRegister(int register_id, T value);
-
         void writeJointTorqueLimit(float limit, int register_id);
 
     public:
@@ -175,6 +172,10 @@ namespace motors_weg_cvw300 {
 
         /** Change the ramp configuration */
         void writeRampConfiguration(configuration::Ramps const& ramps);
+
+        /** Write the value into register */
+        template<typename T>
+        void writeSingleRegister(int register_id, T value);
 
         CurrentState readCurrentState();
 
