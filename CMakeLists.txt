@@ -2,6 +2,6 @@
 # executed from 'project/build' with 'cmake ../'.
 cmake_minimum_required(VERSION 2.6)
 find_package(Rock)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 rock_init(motors_weg_cvw300 0.1)
 rock_standard_layout()
