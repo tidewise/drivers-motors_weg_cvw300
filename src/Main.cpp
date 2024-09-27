@@ -131,6 +131,7 @@ int main(int argc, char** argv)
     }
     else if (cmd == "fault-state") {
         Driver driver(id);
+        driver.openURI(uri);
         driver.readMotorRatings();
         auto state = driver.readFaultState();
         cout << "Current Fault: " << state.current_fault << "\n"
