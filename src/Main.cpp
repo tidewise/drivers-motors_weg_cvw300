@@ -345,6 +345,7 @@ int main(int argc, char** argv)
         driver.openURI(uri);
 
         auto deadline = Time::now() + Time::fromMicroseconds(keep_command_time * 1e6);
+        driver.readMotorRatings();
         do {
             driver.writeSpeedCommand(command);
             usleep(50000);
