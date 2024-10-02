@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <fstream>
 
+using namespace base;
 using namespace std;
 using namespace motors_weg_cvw300;
 
@@ -22,7 +23,77 @@ std::string statusToString(InverterStatus status) {
     return "UNKNOWN";
 }
 
-void usage(ostream& stream) {
+struct SetupArguments {
+    configuration::Ramps ramp;
+    JointLimitRange limits;
+    Time watchdog_timeout;
+    configuration::CommunicationErrorAction watchdog_action;
+    configuration::ControlType control_type;
+
+    SetupArguments()
+    {
+        ramp.acceleration_time = Time::fromSeconds(4);
+        ramp.deceleration_time = Time::fromSeconds(4);
+        ramp.type = configuration::RAMP_LINEAR;
+
+        limits = limits.Speed(-170, 170);
+
+        watchdog_timeout = Time::fromSeconds(5);
+        watchdog_action = configuration::CommunicationErrorAction::STOP_WITH_RAMP;
+
+        control_type = configuration::CONTROL_ENCODER;
+    }
+
+    void updateMinLimits(float min_limit)
+    {
+        limits = limits.Speed(min_limit, limits.max.speed);
+    }
+
+    void updateMaxLimits(float max_limit)
+    {
+        limits = limits.Speed(limits.min.speed, max_limit);
+    }
+};
+
+SetupArguments processSetupArguments(int argc, char** argv)
+{
+    if (argc > 4 && argc > 12) {
+        throw invalid_argument(
+            "setup command requires the following values: ramp acceleration "
+            "time, ramp deceleration time, ramp type, lower limit, upper limit, "
+            "watchdog timeout, control type");
+    }
+
+    SetupArguments args;
+    if (argc >= 5) {
+        args.ramp.acceleration_time = Time::fromMicroseconds(stof(argv[4]) * 1e6);
+    }
+    if (argc >= 6) {
+        args.ramp.deceleration_time = Time::fromMicroseconds(stof(argv[5]) * 1e6);
+    }
+    if (argc >= 7) {
+        args.ramp.type = configuration::RampType(stoi(argv[6]));
+    }
+    if (argc >= 8) {
+        args.updateMinLimits(stof(argv[7]));
+    }
+    if (argc >= 9) {
+        args.updateMaxLimits(stof(argv[8]));
+    }
+    if (argc >= 10) {
+        args.watchdog_timeout = Time::fromMicroseconds(stof(argv[9]) * 1e6);
+    }
+    if (argc >= 11) {
+        args.watchdog_action = configuration::CommunicationErrorAction(stoi(argv[10]));
+    }
+    if (argc == 12) {
+        args.control_type = configuration::ControlType(stoi(argv[11]));
+    }
+    return args;
+}
+
+void usage(ostream& stream)
+{
     stream << "usage: motors_weg_cvw300_ctl URI ID CMD\n"
            << "Factory defaults: 19200, ID=1\n"
            << "\n"
@@ -262,8 +333,20 @@ int main(int argc, char** argv)
         }
         Driver driver(id);
         driver.openURI(uri);
-        driver.enable();
         driver.writeSpeedCommand(command);
+    }
+    else if (cmd == "setup") {
+
+        Driver driver(id);
+        driver.openURI(uri);
+        driver.prepare();
+
+        auto args = processSetupArguments(argc, argv);
+        driver.writeRampConfiguration(args.ramp);
+        driver.writeJointLimits(args.limits);
+        driver.writeSerialWatchdog(args.watchdog_timeout, args.watchdog_action);
+        driver.writeControlType(args.control_type);
+        driver.enable();
     }
     else {
         cerr << "unknown command '" << cmd << "'";
