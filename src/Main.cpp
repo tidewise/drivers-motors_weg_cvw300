@@ -35,6 +35,7 @@ void usage(ostream& stream) {
            << "  cfg-load: set configuration from a dump file\n"
            << "  cfg-diff: compare configuration of a file with the controller's\n"
            << "  cfg-save: make in-memory configuration permanent\n"
+           << "  speed [SPEED]: writes a speed command in the controller\n"
            << endl;
 }
 
@@ -249,6 +250,20 @@ int main(int argc, char** argv)
         Driver driver(id);
         driver.openURI(uri);
         driver.configSave();
+    }
+    else if (cmd == "speed") {
+        float command = 0;
+        if (argc == 5) {
+            command = stof(argv[4]);
+        }
+        else {
+            cerr << "speed command requires a value";
+            return 1;
+        }
+        Driver driver(id);
+        driver.openURI(uri);
+        driver.enable();
+        driver.writeSpeedCommand(command);
     }
     else {
         cerr << "unknown command '" << cmd << "'";
