@@ -124,8 +124,14 @@ int main(int argc, char** argv)
                  << setw(6) << state.motor.raw << "\n";
         }
     }
+    else if (cmd == "prepare") {
+        Driver driver(id);
+        driver.openURI(uri);
+        driver.prepare();
+    }
     else if (cmd == "fault-state") {
         Driver driver(id);
+        driver.openURI(uri);
         driver.readMotorRatings();
         auto state = driver.readFaultState();
         cout << "Current Fault: " << state.current_fault << "\n"
