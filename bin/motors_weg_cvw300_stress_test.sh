@@ -31,14 +31,14 @@ control_cycle() {
     echo 0 > $fault_reset_gpio/value
 
     echo "Enabling motor speed command: $speed"
-    motors_weg_cvw300_ctl $uri $id speed $speed
+    motors_weg_cvw300_ctl $uri $id speed $speed 0.5
 
     while [ $(date +%s) -lt $deadline ]
     do :
     done
 
     echo "Disabling propulsion"
-    motors_weg_cvw300_ctl $uri $id speed 0
+    motors_weg_cvw300_ctl $uri $id speed 0 0.5
     echo 0 > $propulsion_enable_gpio/value
 
     disabled_deadline=$(($(date +%s) + $time_disabled))
@@ -58,6 +58,8 @@ then
     echo "Before running this command you must source the syskit environment"
     exit 1
 fi
+
+motors_weg_cvw300_ctl $uri $id setup
 
 program_deadline=$(($(date +%s) + $total_run_time))
 while [ $(date +%s) -lt $program_deadline ]
