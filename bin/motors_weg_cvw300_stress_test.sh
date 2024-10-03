@@ -25,11 +25,20 @@ usage()
 
 control_cycle() {
     deadline=$(($(date +%s) + $time_between_estop_reset))
+    echo
     echo "Enabling propulsion and resetting fault state"
     echo 1 > $propulsion_enable_gpio/value
-    echo 1 > $fault_reset_gpio/value
-    sleep 0.1
-    echo 0 > $fault_reset_gpio/value
+
+    fault_before_reset=$(motors_weg_cvw300_ctl $uri $id fault-state | grep "Current Fault: " | cut -d' ' -f3) 
+    echo "Trying to reset fault: $fault_before_reset"
+    motors_weg_cvw300_ctl $uri $id prepare
+    fault_after_reset=$(motors_weg_cvw300_ctl $uri $id fault-state | grep "Current Fault: " | cut -d' ' -f3)
+
+    if [ $fault_after_reset -ne 0 ]
+    then
+       echo "Resetting from fault $fault_before_reset failed as a fault state remained: $fault_after_reset"
+       exit 1
+    fi
 
     echo "Enabling motor speed command: $speed"
     while [ $(date +%s) -lt $deadline ]
@@ -40,6 +49,8 @@ control_cycle() {
     echo "Disabling propulsion"
     motors_weg_cvw300_ctl $uri $id speed 0 0.5
     echo 0 > $propulsion_enable_gpio/value
+    fault_after_disable=$(motors_weg_cvw300_ctl $uri $id fault-state | grep "Current Fault: " | cut -d' ' -f3) 
+    echo "Fault after disabling propulsion: $fault_after_disable"
 
     disabled_deadline=$(($(date +%s) + $time_disabled))
     while [ $(date +%s) -lt $disabled_deadline ]
