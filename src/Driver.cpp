@@ -74,6 +74,18 @@ void Driver::prepare() {
     );
 }
 
+void Driver::resetFault() {
+    writeSingleRegister<int16_t>(
+        R_SERIAL_STATUS_WORD,
+        configuration::SERIAL_MODE_REMOTE |
+        configuration::SERIAL_RESET_FAULT
+    );
+    writeSingleRegister<int16_t>(
+        R_SERIAL_STATUS_WORD,
+        configuration::SERIAL_MODE_REMOTE
+    );
+}
+
 void Driver::enable() {
     writeSingleRegister<int16_t>(
         R_SERIAL_STATUS_WORD,

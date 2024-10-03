@@ -147,6 +147,9 @@ namespace motors_weg_cvw300 {
         /** Prepare the unit to receive control from the driver w/o enabling power */
         void prepare();
 
+        /** Resets a fault state */
+        void resetFault();
+
         /** Enable the motor control, and give control to the serial interface */
         void enable();
 
