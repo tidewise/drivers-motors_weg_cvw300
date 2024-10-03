@@ -31,10 +31,9 @@ control_cycle() {
     echo 0 > $fault_reset_gpio/value
 
     echo "Enabling motor speed command: $speed"
-    motors_weg_cvw300_ctl $uri $id speed $speed 0.5
-
     while [ $(date +%s) -lt $deadline ]
-    do :
+    do
+       motors_weg_cvw300_ctl $uri $id speed $speed 0.5
     done
 
     echo "Disabling propulsion"
