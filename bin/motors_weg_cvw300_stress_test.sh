@@ -28,6 +28,7 @@ control_cycle() {
     echo "Enabling propulsion and resetting fault state"
     echo 1 > $propulsion_enable_gpio/value
     echo 1 > $fault_reset_gpio/value
+    sleep 0.1
     echo 0 > $fault_reset_gpio/value
 
     echo "Enabling motor speed command: $speed"
