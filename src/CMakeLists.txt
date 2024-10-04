@@ -6,4 +6,4 @@ rock_library(motors_weg_cvw300
 
 rock_executable(motors_weg_cvw300_ctl Main.cpp
     DEPS motors_weg_cvw300)
-
+install(PROGRAMS ${CMAKE_SOURCE_DIR}/bin/motors_weg_cvw300_stress_test.sh DESTINATION bin RENAME motors_weg_cvw300_stress_test)
