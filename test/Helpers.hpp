@@ -34,14 +34,8 @@ void Helpers<Test>::EXPECT_MODBUS_WRITE(
         requestFrame, address, registerID, value
     );
 
-    uint8_t responseFrame[256];
-    uint8_t* responseEnd = modbus::RTU::formatFrame(
-        responseFrame, requestFrame[0], requestFrame[1],
-        nullptr, nullptr
-    );
-
     test.EXPECT_REPLY(std::vector<std::uint8_t>(requestFrame, requestEnd),
-                      std::vector<std::uint8_t>(responseFrame, responseEnd));
+                      std::vector<std::uint8_t>(requestFrame, requestEnd));
 }
 
 template<typename Test>
